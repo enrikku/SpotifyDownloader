@@ -1,0 +1,49 @@
+﻿<Window
+    x:Class="SpotifyPlayListDownloader.PlaylistConfirmDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Confirmar Playlist"
+    Width="400"
+    Height="300"
+    ResizeMode="NoResize"
+    WindowStartupLocation="CenterOwner"
+    WindowStyle="ToolWindow">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock
+            x:Name="PlaylistNameText"
+            Margin="0,0,0,10"
+            FontSize="16"
+            FontWeight="Bold"
+            TextAlignment="Center" />
+
+        <Image
+            x:Name="PlaylistImage"
+            Grid.Row="1"
+            Width="200"
+            Height="200"
+            HorizontalAlignment="Center" />
+
+        <StackPanel
+            Grid.Row="2"
+            Margin="0,10,0,0"
+            HorizontalAlignment="Center"
+            Orientation="Horizontal">
+            <Button
+                Width="80"
+                Margin="10,0"
+                Click="Confirm_Click"
+                Content="Confirm" />
+            <Button
+                Width="80"
+                Margin="10,0"
+                Click="Cancel_Click"
+                Content="Cancel" />
+        </StackPanel>
+    </Grid>
+</Window>
