@@ -16,12 +16,23 @@ namespace SpotifyPlayListDownloader.Services
             ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "exe", "ffmpeg.exe");
         }
 
-        public async Task DownloadMp3Async(string query, string outputDirectory)
+        public async Task DownloadMp3Async(string query, string outputDirectory, SpotifyPlayListDownloader.Clases.PlayListTracks.Item item)
         {
             try
             {
+                var path = Path.Combine(outputDirectory, query + ".mp3");
+
+                // Sanitizar el nombre del archivo
+                string sanitizedQuery = string.Join("_", query.Split(Path.GetInvalidFileNameChars()));
+                string output = Path.Combine(outputDirectory, $"{sanitizedQuery}.mp3");
+
+                if (File.Exists(path))
+                {
+                    Console.WriteLine($"[yt-dlp] Success: {query}");
+                    return;
+                }
+
                 string search = $"ytsearch1:{query}";
-                string output = Path.Combine(outputDirectory, "%(title)s.%(ext)s");
 
                 string args = $"-x --audio-format mp3 --ffmpeg-location \"{ffmpegPath}\" -o \"{output}\" \"{search}\"";
 
@@ -52,13 +63,31 @@ namespace SpotifyPlayListDownloader.Services
                     Console.WriteLine($"[yt-dlp] Error: {stdErr}");
                     MessageBox.Show($"Error: {stdErr}");
                 }
-                else Console.WriteLine($"[yt-dlp] Success: {query}");
+                else
+                {
+                    DateTime releaseDate;
+                    if (!string.IsNullOrWhiteSpace(item.track.album.release_date) && DateTime.TryParse(item.track.album.release_date, out releaseDate)) { }
+                    else releaseDate = DateTime.MinValue;
+
+                    SetMp3Metadata(output, item.track.name, item.track.artists.Select(a => a.name).ToArray(), item.track.album.name, (uint)releaseDate.Year);
+                    Console.WriteLine($"[yt-dlp] Success: {query}");
+                }
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error: {ex.Message}");
-                return;
             }
+        }
+
+        public void SetMp3Metadata(string filePath, string title, string[] artist, string album, uint year)
+        {
+            if (File.Exists(filePath) == false) return;
+            var file = TagLib.File.Create(filePath);
+            file.Tag.Title = title;
+            file.Tag.Performers = artist;
+            file.Tag.Album = album;
+            file.Tag.Year = year;
+            file.Save();
         }
     }
 }

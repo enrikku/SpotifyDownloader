@@ -6,26 +6,33 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon>icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="appsettings.json" />
     <None Remove="exe\ffmpeg.exe" />
     <None Remove="exe\yt-dlp.exe" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="exe\ffmpeg.exe">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="exe\yt-dlp.exe">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="icon.ico" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.7" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.7" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="TagLibSharp" Version="2.3.0" />
   </ItemGroup>
 
 </Project>

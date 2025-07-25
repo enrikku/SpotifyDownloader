@@ -31,6 +31,14 @@
             Grid.Row="0"
             Grid.Column="1"
             Margin="0,0,10,10" />
+        <Button
+            Grid.Row="0"
+            Grid.Column="2"
+            Width="25"
+            Height="25"
+            Click="ShowHelp_Click"
+            Content="?"
+            ToolTip="Como obtener el ID de la playlist" />
 
         <!--  Label + Output folder + Button  -->
         <Label
@@ -38,7 +46,7 @@
             Grid.Column="0"
             Margin="0,0,10,10"
             VerticalAlignment="Center"
-            Content="Download to:" />
+            Content="Desacargar en:" />
         <TextBox
             x:Name="OutputPathTextBox"
             Grid.Row="1"
@@ -50,7 +58,7 @@
             Width="80"
             Margin="0,0,0,10"
             Click="BrowseButton_Click"
-            Content="Browse..." />
+            Content="Explorar..." />
 
         <!--  Download button  -->
         <Button
@@ -60,7 +68,7 @@
             Height="35"
             HorizontalAlignment="Left"
             Click="DownloadButton_Click"
-            Content="Download Songs" />
+            Content="Desacargar Canciones" />
 
         <Label
             x:Name="lblStatus"

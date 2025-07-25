@@ -76,7 +76,7 @@ namespace SpotifyPlayListDownloader
                     foreach (var item in playlist.tracks.items)
                     {
                         var title = $"{item.track.name} {item.track.artists.FirstOrDefault()?.name}";
-                        await yt.DownloadMp3Async(title, outputPath);
+                        await yt.DownloadMp3Async(title, outputPath, item);
                         qtt++;
                         lblStatus.Content = $"({qtt}/{playlist.tracks.items.Count}) {title}";
                     }
@@ -92,6 +92,21 @@ namespace SpotifyPlayListDownloader
             {
                 System.Windows.MessageBox.Show($"Error: {ex.Message}");
             }
+        }
+
+        private void ShowHelp_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show(
+                "Cómo obtener el ID de la playlist:\n\n" +
+                "1. Abre Spotify y ve a la playlist que deseas descargar.\n" +
+                "2. Haz clic en los tres puntos (...) > Compartir > Copiar enlace de la playlist.\n" +
+                "3. Pega el enlace aquí, o copia solo la parte después de '/playlist/'.\n\n" +
+                "Ejemplo:\nhttps://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M\n\n" +
+                "El ID de la playlist es: \"37i9dQZF1DXcBWIGoYBM5M\"",
+                "¿Cómo obtener el ID de la playlist?",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information
+            );
         }
     }
 }

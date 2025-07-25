@@ -1,11 +1,8 @@
-﻿using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using SpotifyPlayListDownloader.Clases;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
-
-using Microsoft.Extensions.Configuration.Json;
 
 namespace SpotifyPlayListDownloader.Services
 {
@@ -40,22 +37,6 @@ namespace SpotifyPlayListDownloader.Services
 
             return JsonDocument.Parse(json).RootElement.GetProperty("access_token").GetString();
         }
-
-        //public async Task<PlayListTracks.Root> GetPlaylistTracksAsync(string playlistId, string accessToken)
-        //{
-        //    var url = $"https://api.spotify.com/v1/playlists/{playlistId}";
-
-        //    using var client = new HttpClient();
-        //    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
-
-        //    var response = await client.GetAsync(url);
-        //    response.EnsureSuccessStatusCode();
-
-        //    var json = await response.Content.ReadAsStringAsync();
-
-        //    var playlistRoot = JsonConvert.DeserializeObject<PlayListTracks.Root>(json);
-        //    return playlistRoot;
-        //}
 
         public async Task<PlayListTracks.Root> GetPlaylistTracksAsync(string playlistId, string accessToken)
         {
