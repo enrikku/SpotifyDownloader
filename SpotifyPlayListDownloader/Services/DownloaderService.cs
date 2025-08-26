@@ -1,9 +1,7 @@
-﻿using System.Diagnostics;
+﻿using log4net;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
-using System.Windows;
-
-using log4net;
 
 namespace SpotifyPlayListDownloader.Services
 {
@@ -16,16 +14,16 @@ namespace SpotifyPlayListDownloader.Services
 
         public DownloaderService()
         {
-            Log.Debug("Initializing DownloaderService");
+            Log.Debug("Iniciando DownloaderService");
             ytDlpPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "exe", "yt-dlp.exe");
             ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "exe", "ffmpeg.exe");
-            Log.Info($"yt-dlp path: {ytDlpPath}");
-            Log.Info($"ffmpeg path: {ffmpegPath}");
+            Log.Info($"yt-dlp ruta: {ytDlpPath}");
+            Log.Info($"ffmpeg ruta: {ffmpegPath}");
         }
 
         public async Task DownloadMp3Async(string query, string outputDirectory, SpotifyPlayListDownloader.Clases.PlayListTracks.Item item)
         {
-            Log.Info($"Start download for: {query}");
+            Log.Info($"Emepzando descarga: {query}");
             try
             {
                 var path = Path.Combine(outputDirectory, query + ".mp3");
@@ -36,15 +34,14 @@ namespace SpotifyPlayListDownloader.Services
 
                 if (File.Exists(path))
                 {
-                    Log.Info($"File already exists: {path}");
-                    Console.WriteLine($"[yt-dlp] Success: {query}");
+                    Log.Info($"El archivo ya existe: {path}");
                     return;
                 }
 
                 string search = $"ytsearch1:{query}";
                 string args = $"-x --audio-format mp3 --ffmpeg-location \"{ffmpegPath}\" -o \"{output}\" \"{search}\"";
 
-                Log.Debug($"yt-dlp arguments: {args}");
+                Log.Debug($"yt-dlp argumentos: {args}");
 
                 var process = new Process
                 {
@@ -62,28 +59,31 @@ namespace SpotifyPlayListDownloader.Services
                 };
 
                 process.Start();
-                Log.Debug("yt-dlp process started");
+                Log.Debug("yt-dlp proceso iniciado");
 
                 string stdOut = await process.StandardOutput.ReadToEndAsync();
                 string stdErr = await process.StandardError.ReadToEndAsync();
 
                 process.WaitForExit();
-                Log.Debug("yt-dlp process finished");
+                Log.Debug("yt-dlp proceso finalizado");
 
                 if (process.ExitCode != 0)
                 {
-                    Log.Error($"yt-dlp failed with code {process.ExitCode}. Error: {stdErr}");
-                    Console.WriteLine($"[yt-dlp] Error: {stdErr}");
+                    Log.Error($"yt-dlp a falldo con codigo de salida {process.ExitCode}. Error: {stdErr}. Query: {query}");
+
+                    DateTime releaseDate;
+                    if (!string.IsNullOrWhiteSpace(item.track.album.release_date) && DateTime.TryParse(item.track.album.release_date, out releaseDate)) { }
+                    else releaseDate = DateTime.MinValue;
+                    SetMp3Metadata(output, item.track.name, item.track.artists.Select(a => a.name).ToArray(), item.track.album.name, (uint)releaseDate.Year);
                 }
                 else
                 {
-                    Log.Info($"yt-dlp success for: {query}");
+                    Log.Info($"yt-dlp descarga exitosa: {query}");
                     DateTime releaseDate;
                     if (!string.IsNullOrWhiteSpace(item.track.album.release_date) && DateTime.TryParse(item.track.album.release_date, out releaseDate)) { }
                     else releaseDate = DateTime.MinValue;
 
                     SetMp3Metadata(output, item.track.name, item.track.artists.Select(a => a.name).ToArray(), item.track.album.name, (uint)releaseDate.Year);
-                    Console.WriteLine($"[yt-dlp] Success: {query}");
                 }
             }
             catch (Exception ex)
@@ -94,10 +94,10 @@ namespace SpotifyPlayListDownloader.Services
 
         public void SetMp3Metadata(string filePath, string title, string[] artist, string album, uint year)
         {
-            Log.Debug($"Setting metadata for {filePath}");
+            Log.Debug($"Estableciendo metadatos para {filePath}");
             if (File.Exists(filePath) == false)
             {
-                Log.Warn($"File not found for metadata: {filePath}");
+                Log.Warn($"Fichero no encontrado para establecer metadatos: {filePath}");
                 return;
             }
             try
@@ -108,11 +108,11 @@ namespace SpotifyPlayListDownloader.Services
                 file.Tag.Album = album;
                 file.Tag.Year = year;
                 file.Save();
-                Log.Info($"Metadata saved for {filePath}");
+                Log.Info($"Metadatos establecidos para {filePath}");
             }
             catch (Exception ex)
             {
-                Log.Error($"Error setting metadata for {filePath}: {ex.Message}", ex);
+                Log.Error($"Error estableciendo metadatos para {filePath}: {ex.Message}", ex);
             }
         }
     }

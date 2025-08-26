@@ -1,9 +1,9 @@
-﻿using Newtonsoft.Json;
+﻿using log4net;
+using Newtonsoft.Json;
 using SpotifyPlayListDownloader.Clases;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
-using log4net;
 
 namespace SpotifyPlayListDownloader.Services
 {
@@ -18,12 +18,12 @@ namespace SpotifyPlayListDownloader.Services
         {
             _clientId = clientId;
             _clientSecret = clientSecret;
-            Log.Info("SpotifyService initialized");
+            Log.Info("SpotifyService iniciado");
         }
 
         public async Task<string> GetAccessTokenAsync()
         {
-            Log.Info("Requesting Spotify access token...");
+            Log.Info("Obteniendo token de acceso...");
             try
             {
                 using var client = new HttpClient();
@@ -41,24 +41,24 @@ namespace SpotifyPlayListDownloader.Services
                 };
 
                 var response = await client.SendAsync(request);
-                Log.Debug($"Access token response status: {response.StatusCode}");
+                Log.Debug($"Respuesta al obtener token de acceso: {response.StatusCode}");
 
                 var json = await response.Content.ReadAsStringAsync();
                 var token = JsonDocument.Parse(json).RootElement.GetProperty("access_token").GetString();
 
-                Log.Info("Spotify access token retrieved successfully");
+                Log.Info("Token de acceso obtenido correctamente");
                 return token;
             }
             catch (Exception ex)
             {
-                Log.Error("Error retrieving access token", ex);
+                Log.Error("Error al obtener el token de acceso", ex);
                 throw;
             }
         }
 
         public async Task<PlayListTracks.Root> GetPlaylistTracksAsync(string playlistId, string accessToken)
         {
-            Log.Info($"Retrieving playlist tracks for playlistId={playlistId}");
+            Log.Info($"Obteniendo canciones de la playlist con ID={playlistId}");
             try
             {
                 var playlistInfoUrl = $"https://api.spotify.com/v1/playlists/{playlistId}";
@@ -69,21 +69,21 @@ namespace SpotifyPlayListDownloader.Services
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
 
                 // Obtener info básica de la playlist
-                Log.Debug($"Requesting playlist info: {playlistInfoUrl}");
+                Log.Debug($"Obteniendo información de la playlist: {playlistInfoUrl}");
                 var response = await client.GetAsync(playlistInfoUrl);
                 response.EnsureSuccessStatusCode();
                 var playlistJson = await response.Content.ReadAsStringAsync();
-                Log.Debug("Playlist info retrieved");
+                Log.Debug("Información de la playlist obtenida");
 
                 var playlistRoot = JsonConvert.DeserializeObject<PlayListTracks.Root>(playlistJson);
                 playlistRoot.tracks.items = new List<PlayListTracks.Item>();
 
                 string nextUrl = tracksUrl;
 
-                // Obtener todas las páginas de tracks
+                // Obtener todas las páginas de canciones
                 while (!string.IsNullOrEmpty(nextUrl))
                 {
-                    Log.Debug($"Requesting tracks page: {nextUrl}");
+                    Log.Debug($"Obteniendo canciones de la playlist: {nextUrl}");
                     var pageResponse = await client.GetAsync(nextUrl);
                     pageResponse.EnsureSuccessStatusCode();
 
@@ -92,20 +92,20 @@ namespace SpotifyPlayListDownloader.Services
 
                     if (trackPage?.items != null)
                     {
-                        Log.Debug($"Retrieved {trackPage.items.Count} tracks");
+                        Log.Debug($"Se recuperaron {trackPage.items.Count} canciones");
                         playlistRoot.tracks.items.AddRange(trackPage.items);
                     }
-                    else Log.Warn("No tracks found in this page");
+                    else Log.Warn("No se encontraron canciones en esta página");
 
                     nextUrl = trackPage.next;
                 }
 
-                Log.Info($"Playlist tracks retrieval completed. Total tracks: {playlistRoot.tracks.items.Count}");
+                Log.Info($"Se completó la recuperación de canciones. Total: {playlistRoot.tracks.items.Count}");
                 return playlistRoot;
             }
             catch (Exception ex)
             {
-                Log.Error($"Error retrieving playlist tracks for playlistId={playlistId}", ex);
+                Log.Error($"Error al recuperar canciones para la playlist con ID={playlistId}", ex);
                 return null;
             }
         }

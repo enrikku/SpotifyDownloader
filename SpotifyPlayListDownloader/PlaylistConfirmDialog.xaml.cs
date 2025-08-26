@@ -1,7 +1,6 @@
-﻿using System.Windows;
+﻿using log4net;
+using System.Windows;
 using System.Windows.Media.Imaging;
-
-using log4net;
 
 namespace SpotifyPlayListDownloader
 {
@@ -15,7 +14,7 @@ namespace SpotifyPlayListDownloader
         {
             InitializeComponent();
 
-            Log.Info($"Opening PlaylistConfirmDialog for playlist: {playlistName}");
+            Log.Info($"Abriendo PlaylistConfirmDialog para la playlist: {playlistName}");
 
             PlaylistNameText.Text = playlistName;
 
@@ -28,26 +27,26 @@ namespace SpotifyPlayListDownloader
                     bitmap.UriSource = new Uri(imageUrl, UriKind.Absolute);
                     bitmap.EndInit();
                     PlaylistImage.Source = bitmap;
-                    Log.Debug($"Playlist image loaded from URL: {imageUrl}");
+                    Log.Debug($"Imagen de la playlist cargada desde la URL: {imageUrl}");
                 }
                 catch (Exception ex)
                 {
-                    Log.Warn($"Failed to load playlist image from URL: {imageUrl}. Error: {ex.Message}");
+                    Log.Warn($"Error al cargar la imagen de la playlist desde la URL: {imageUrl}. Detalle: {ex.Message}");
                 }
             }
-            else Log.Debug("No image URL provided for playlist.");
+            else Log.Debug("No se proporcionó URL de imagen para la playlist.");
         }
 
         private void Confirm_Click(object sender, RoutedEventArgs e)
         {
-            Log.Info("Playlist confirmed by user.");
+            Log.Info("Playlist confirmada por el usuario.");
             IsConfirmed = true;
             this.Close();
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
-            Log.Info("Playlist confirmation cancelled by user.");
+            Log.Info("Confirmación de la playlist cancelada por el usuario.");
             this.Close();
         }
     }

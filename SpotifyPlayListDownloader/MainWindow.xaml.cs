@@ -1,14 +1,11 @@
-﻿using Microsoft.Win32;
+﻿using log4net;
+using Microsoft.Win32;
 using SpotifyPlayListDownloader.Clases;
 using SpotifyPlayListDownloader.Services;
 using System.Windows;
-using log4net;
 
 namespace SpotifyPlayListDownloader
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof(MainWindow));
@@ -16,16 +13,16 @@ namespace SpotifyPlayListDownloader
         public MainWindow()
         {
             InitializeComponent();
-            Log.Info("MainWindow initialized");
+            Log.Info("MainWindow iniciado");
 
-            string downloadsPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
-            OutputPathTextBox.Text = downloadsPath;
-            Log.Debug($"Default download path set to: {downloadsPath}");
+            string musicPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic));
+            OutputPathTextBox.Text = musicPath;
+            Log.Debug($"Ruta de descarga por defecto: {musicPath}");
         }
 
         private void BrowseButton_Click(object sender, RoutedEventArgs e)
         {
-            Log.Info("BrowseButton clicked: selecting download folder");
+            Log.Info("Botón 'Examinar' pulsado: seleccionando carpeta de descarga");
             var dialog = new OpenFolderDialog()
             {
                 Title = "Selecciona carpeta de descarga",
@@ -36,24 +33,21 @@ namespace SpotifyPlayListDownloader
             if (dialog.ShowDialog() == true)
             {
                 OutputPathTextBox.Text = dialog.FolderName;
-                Log.Info($"Download folder selected: {dialog.FolderName}");
+                Log.Info($"Carpeta de descarga seleccionada: {dialog.FolderName}");
             }
-            else
-            {
-                Log.Debug("Folder selection cancelled");
-            }
+            else Log.Debug("Selección de carpeta cancelada");
         }
 
         private async void DownloadButton_Click(object sender, RoutedEventArgs e)
         {
             var playlistId = PlaylistIdTextBox.Text;
             var outputPath = OutputPathTextBox.Text;
-            Log.Info($"DownloadButton clicked. PlaylistId: {playlistId}, OutputPath: {outputPath}");
+            Log.Info($"Botón 'Descargar' pulsado. PlaylistId: {playlistId}, RutaSalida: {outputPath}");
 
             if (string.IsNullOrWhiteSpace(playlistId) || string.IsNullOrWhiteSpace(outputPath))
             {
                 MessageBox.Show("Por favor, ingrese el ID de la playlist y la ruta de salida.");
-                Log.Warn("PlaylistId o OutputPath vacíos. Operación cancelada.");
+                Log.Warn("PlaylistId o RutaSalida vacíos. Operación cancelada.");
                 return;
             }
 
@@ -64,10 +58,10 @@ namespace SpotifyPlayListDownloader
             try
             {
                 lblStatus.Content = "Obteniendo canciones...";
-                Log.Info("Obteniendo access token...");
+                Log.Info("Obteniendo token de acceso...");
                 var token = await spotify.GetAccessTokenAsync();
 
-                Log.Info("Obteniendo playlist tracks...");
+                Log.Info("Obteniendo canciones de la playlist...");
                 var playlist = await spotify.GetPlaylistTracksAsync(playlistId, token);
 
                 if (playlist != null)
@@ -95,12 +89,17 @@ namespace SpotifyPlayListDownloader
                     var qtt = 0;
                     foreach (var item in playlist.tracks.items)
                     {
-                        var title = $"{item.track.name} {item.track.artists.FirstOrDefault()?.name}";
-                        Log.Debug($"Descargando: {title}");
-                        await yt.DownloadMp3Async(title, outputPath, item);
-                        qtt++;
-                        lblStatus.Content = $"({qtt}/{playlist.tracks.items.Count}) {title}";
+                        if (item.track != null)
+                        {
+                            var title = $"{item.track.name} {item.track.artists.FirstOrDefault()?.name}";
+                            Log.Debug($"Descargando: {title}");
+                            await yt.DownloadMp3Async(title, outputPath, item);
+                            qtt++;
+                            lblStatus.Content = $"({qtt}/{playlist.tracks.items.Count}) {title}";
+                        }
+                        else qtt++;
                     }
+
                     var end = DateTime.Now;
                     var time = end - start;
                     lblStatus.Content = $"Tiempo de descarga: {time.Hours}h {time.Minutes}m {time.Seconds}s";
@@ -117,7 +116,6 @@ namespace SpotifyPlayListDownloader
             catch (Exception ex)
             {
                 Log.Error($"Error durante la descarga: {ex.Message}", ex);
-                MessageBox.Show($"Error: {ex.Message}");
             }
         }
 

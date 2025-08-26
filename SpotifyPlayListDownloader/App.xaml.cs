@@ -1,10 +1,9 @@
-﻿using System.IO;
-using System.Reflection;
-using System.Windows;
-
-using log4net;
+﻿using log4net;
 using log4net.Config;
 using log4net.Repository;
+using System.IO;
+using System.Reflection;
+using System.Windows;
 
 namespace SpotifyPlayListDownloader
 {
@@ -20,11 +19,10 @@ namespace SpotifyPlayListDownloader
             ILoggerRepository repo = LogManager.GetRepository(Assembly.GetEntryAssembly());
             XmlConfigurator.Configure(repo, new FileInfo("log4net.config"));
 
-            // Manejo global de excepciones (recomendado)
             this.DispatcherUnhandledException += (s, ex) =>
             {
                 LogManager.GetLogger(typeof(App)).Fatal("Excepción UI no controlada", ex.Exception);
-                ex.Handled = true; // Decide si quieres cerrar la app o no
+                ex.Handled = true;
             };
             AppDomain.CurrentDomain.UnhandledException += (s, ex2) =>
             {
@@ -39,7 +37,6 @@ namespace SpotifyPlayListDownloader
 
         protected override void OnExit(ExitEventArgs e)
         {
-            // Cierra correctamente los appenders
             log4net.LogManager.Shutdown();
             base.OnExit(e);
         }
