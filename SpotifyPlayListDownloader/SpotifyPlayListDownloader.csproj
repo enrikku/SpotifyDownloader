@@ -13,6 +13,7 @@
     <None Remove="appsettings.json" />
     <None Remove="exe\ffmpeg.exe" />
     <None Remove="exe\yt-dlp.exe" />
+    <None Remove="Images\no_image.png" />
     <None Remove="log4net.config" />
   </ItemGroup>
 
@@ -41,6 +42,10 @@
     <Content Include="log4net.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Images\no_image.png" />
   </ItemGroup>
 
 </Project>

@@ -10,7 +10,7 @@ global using System.Windows.Media.Imaging;
 global using log4net;
 global using log4net.Config;
 global using log4net.Repository;
-global using Microsoft.Toolkit.Uwp.Notifications;
+
 global using Microsoft.Extensions.Configuration;
 global using Microsoft.Win32;
 
