@@ -1,0 +1,21 @@
+﻿global using System.Diagnostics;
+global using System.IO;
+global using System.Net.Http;
+global using System.Reflection;
+global using System.Text;
+global using System.Text.Json;
+global using System.Windows;
+global using System.Windows.Media.Imaging;
+
+global using log4net;
+global using log4net.Config;
+global using log4net.Repository;
+global using Microsoft.Toolkit.Uwp.Notifications;
+global using Microsoft.Extensions.Configuration;
+global using Microsoft.Win32;
+
+global using Newtonsoft.Json;
+
+global using SpotifyPlayListDownloader.Clases;
+global using SpotifyPlayListDownloader.Enums;
+global using SpotifyPlayListDownloader.Services;

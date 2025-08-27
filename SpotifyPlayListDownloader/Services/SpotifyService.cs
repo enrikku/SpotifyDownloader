@@ -1,11 +1,4 @@
-﻿using log4net;
-using Newtonsoft.Json;
-using SpotifyPlayListDownloader.Clases;
-using System.Net.Http;
-using System.Text;
-using System.Text.Json;
-
-namespace SpotifyPlayListDownloader.Services
+﻿namespace SpotifyPlayListDownloader.Services
 {
     public class SpotifyService
     {

@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
-
-namespace SpotifyPlayListDownloader.Clases
+﻿namespace SpotifyPlayListDownloader.Clases
 {
     public static class ConfigHelper
     {

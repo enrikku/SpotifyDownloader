@@ -1,11 +1,4 @@
-﻿using log4net;
-using log4net.Config;
-using log4net.Repository;
-using System.IO;
-using System.Reflection;
-using System.Windows;
-
-namespace SpotifyPlayListDownloader
+﻿namespace SpotifyPlayListDownloader
 {
     /// <summary>
     /// Interaction logic for App.xaml

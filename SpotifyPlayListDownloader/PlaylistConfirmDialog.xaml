@@ -25,6 +25,7 @@
         <Image
             x:Name="PlaylistImage"
             Grid.Row="1"
+            Source="/Images/no_image.png"
             Width="200"
             Height="200"
             HorizontalAlignment="Center" />

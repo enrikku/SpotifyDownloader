@@ -1,9 +1,4 @@
-﻿using log4net;
-using System.Diagnostics;
-using System.IO;
-using System.Text;
-
-namespace SpotifyPlayListDownloader.Services
+﻿namespace SpotifyPlayListDownloader.Services
 {
     public class DownloaderService
     {
@@ -15,8 +10,8 @@ namespace SpotifyPlayListDownloader.Services
         public DownloaderService()
         {
             Log.Debug("Iniciando DownloaderService");
-            ytDlpPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "exe", "yt-dlp.exe");
-            ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "exe", "ffmpeg.exe");
+            ytDlpPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "exe", "yt-dlp.exe");
+            ffmpegPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "exe", "ffmpeg.exe");
             Log.Info($"yt-dlp ruta: {ytDlpPath}");
             Log.Info($"ffmpeg ruta: {ffmpegPath}");
         }
@@ -26,11 +21,11 @@ namespace SpotifyPlayListDownloader.Services
             Log.Info($"Emepzando descarga: {query}");
             try
             {
-                var path = Path.Combine(outputDirectory, query + ".mp3");
+                var path = System.IO.Path.Combine(outputDirectory, query + ".mp3");
 
                 // Sanitizar el nombre del archivo
-                string sanitizedQuery = string.Join("_", query.Split(Path.GetInvalidFileNameChars()));
-                string output = Path.Combine(outputDirectory, $"{sanitizedQuery}.mp3");
+                string sanitizedQuery = string.Join("_", query.Split(System.IO.Path.GetInvalidFileNameChars()));
+                string output = System.IO.Path.Combine(outputDirectory, $"{sanitizedQuery}.mp3");
 
                 if (File.Exists(path))
                 {

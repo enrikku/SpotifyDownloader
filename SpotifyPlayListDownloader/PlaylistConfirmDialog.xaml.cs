@@ -1,8 +1,4 @@
-﻿using log4net;
-using System.Windows;
-using System.Windows.Media.Imaging;
-
-namespace SpotifyPlayListDownloader
+﻿namespace SpotifyPlayListDownloader
 {
     public partial class PlaylistConfirmDialog : Window
     {
@@ -10,7 +6,7 @@ namespace SpotifyPlayListDownloader
 
         public bool IsConfirmed { get; private set; } = false;
 
-        public PlaylistConfirmDialog(string playlistName, string imageUrl)
+        public PlaylistConfirmDialog(string playlistName, string? imageUrl)
         {
             InitializeComponent();
 
@@ -18,23 +14,24 @@ namespace SpotifyPlayListDownloader
 
             PlaylistNameText.Text = playlistName;
 
-            if (!string.IsNullOrEmpty(imageUrl))
+            try
             {
-                try
+                if (imageUrl != null)
                 {
                     BitmapImage bitmap = new BitmapImage();
                     bitmap.BeginInit();
                     bitmap.UriSource = new Uri(imageUrl, UriKind.Absolute);
                     bitmap.EndInit();
                     PlaylistImage.Source = bitmap;
-                    Log.Debug($"Imagen de la playlist cargada desde la URL: {imageUrl}");
                 }
-                catch (Exception ex)
-                {
-                    Log.Warn($"Error al cargar la imagen de la playlist desde la URL: {imageUrl}. Detalle: {ex.Message}");
-                }
+                else Log.Warn("La URL de la imagen de la playlist es nula.");
+
+                Log.Debug($"Imagen de la playlist cargada desde la URL: {imageUrl}");
             }
-            else Log.Debug("No se proporcionó URL de imagen para la playlist.");
+            catch (Exception ex)
+            {
+                Log.Warn($"Error al cargar la imagen de la playlist desde la URL: {imageUrl}. Detalle: {ex.Message}");
+            }
         }
 
         private void Confirm_Click(object sender, RoutedEventArgs e)
