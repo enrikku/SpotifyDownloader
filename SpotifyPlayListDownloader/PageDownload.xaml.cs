@@ -1,4 +1,8 @@
-﻿namespace SpotifyPlayListDownloader
+﻿using System;
+
+using static SpotifyPlayListDownloader.Clases.PlayListTracks;
+
+namespace SpotifyPlayListDownloader
 {
     public partial class PageDownload : Window
     {
@@ -63,7 +67,7 @@
                         break;
 
                     case TYPE_DOWNLOAD.ARTIST:
-
+                        DownloadArtist();
                         break;
                 }
             }
@@ -166,6 +170,58 @@
             catch (Exception ex)
             {
                 Log.Error($"Error durante la descarga: {ex.Message}", ex);
+            }
+        }
+
+        private async void DownloadArtist()
+        {
+            try
+            {
+                var artistId = PlaylistIdTextBox.Text;
+                var outputPath = OutputPathTextBox.Text;
+
+                Log.Info($"Botón 'Descargar' pulsado. ArtistId: {artistId}, RutaSalida: {outputPath}");
+
+                if (string.IsNullOrWhiteSpace(artistId) || string.IsNullOrWhiteSpace(outputPath))
+                {
+                    MessageBox.Show("Por favor, ingrese el ID del artista y la ruta de salida.");
+                    Log.Warn("ArtistId o RutaSalida vacíos. Operación cancelada.");
+                    return;
+                }
+
+                var config = ConfigHelper.LoadConfig();
+                var spotify = new SpotifyService(config.Spotify.ClientId, config.Spotify.ClientSecret);
+                var yt = new DownloaderService();
+
+                lblStatus.Content = "Obteniendo canciones del artista...";
+                Log.Info("Obteniendo token de acceso...");
+                var token = await spotify.GetAccessTokenAsync();
+
+                Log.Info("Obteniendo canciones de la playlist...");
+
+                var artistSongs = await spotify.GetArtistsTracksAsync(artistId, ["album", "single", "appears_on"], "ES", "50", "0", token);
+
+                if (artistSongs != null)
+                {
+                    if(artistSongs.items.Count > 0)
+                    {
+                        this.Title = $"{_title} - {artistSongs.items[0].artists.FirstOrDefault()?.name}";
+
+                        foreach (var item in artistSongs.items) 
+                        {
+                            // Do something
+                        }
+                    }
+                }
+                else
+                {
+                    Log.Warn("Arista no encontrada");
+                    MessageBox.Show("Artista no encontrada.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Error durante la descarga", ex);
             }
         }
 

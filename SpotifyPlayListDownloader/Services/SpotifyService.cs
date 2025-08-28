@@ -49,7 +49,7 @@
             }
         }
 
-        public async Task<PlayListTracks.Root> GetPlaylistTracksAsync(string playlistId, string accessToken)
+        public async Task<PlayListTracks.Root?> GetPlaylistTracksAsync(string playlistId, string accessToken)
         {
             Log.Info($"Obteniendo canciones de la playlist con ID={playlistId}");
             try
@@ -99,6 +99,58 @@
             catch (Exception ex)
             {
                 Log.Error($"Error al recuperar canciones para la playlist con ID={playlistId}", ex);
+                return null;
+            }
+        }
+
+        public async Task<ArtistSongs.Root?> GetArtistsTracksAsync(string artistId, List<string> llInclude, string market, string limit, string offset, string accessToken)
+        {
+            Log.Info($"Obteniendo canciones del artista con ID={artistId}");
+            try
+            {
+                var include = Uri.EscapeDataString(string.Join(",", llInclude));
+                var url = $"https://api.spotify.com/v1/artists/{artistId}/albums?include_groups={include}&market={market}&limit={limit}&offset={offset}";
+
+                using var client = new HttpClient();
+                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+
+                Log.Debug($"Obteniendo información del artista: {artistId}");
+                var response = await client.GetAsync(url);
+                response.EnsureSuccessStatusCode();
+                var artistSongs = await response.Content.ReadAsStringAsync();
+                Log.Debug("Información del artista obtenida");
+
+                var artistSongsRoot = JsonConvert.DeserializeObject<ArtistSongs.Root>(artistSongs);
+                // artistSaongsRoot.tracks.items = new List<PlayListTracks.Item>();
+
+                //string nextUrl = tracksUrl;
+
+                //// Obtener todas las páginas de canciones
+                //while (!string.IsNullOrEmpty(nextUrl))
+                //{
+                //    Log.Debug($"Obteniendo canciones de la playlist: {nextUrl}");
+                //    var pageResponse = await client.GetAsync(nextUrl);
+                //    pageResponse.EnsureSuccessStatusCode();
+
+                //    var pageJson = await pageResponse.Content.ReadAsStringAsync();
+                //    var trackPage = JsonConvert.DeserializeObject<PlayListTracks.Tracks>(pageJson);
+
+                //    if (trackPage?.items != null)
+                //    {
+                //        Log.Debug($"Se recuperaron {trackPage.items.Count} canciones");
+                //        playlistRoot.tracks.items.AddRange(trackPage.items);
+                //    }
+                //    else Log.Warn("No se encontraron canciones en esta página");
+
+                //    nextUrl = trackPage.next;
+                //}
+
+                //Log.Info($"Se completó la recuperación de canciones. Total: {playlistRoot.tracks.items.Count}");
+                return artistSongsRoot;
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Error al recuperar canciones para la playlist con ID={artistId}", ex);
                 return null;
             }
         }

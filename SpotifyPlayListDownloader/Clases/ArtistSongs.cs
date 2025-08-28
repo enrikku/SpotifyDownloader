@@ -1,7 +1,7 @@
 ﻿namespace SpotifyPlayListDownloader.Clases
 {
     // https://api.spotify.com/v1/artists/{id}/albums
-    public class AristSongs
+    public class ArtistSongs
     {
         public class Artist
         {
