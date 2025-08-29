@@ -2,49 +2,129 @@
     x:Class="SpotifyPlayListDownloader.PlaylistConfirmDialog"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="Confirmar Playlist"
-    Width="400"
-    Height="300"
+    Title="Confirm Playlist"
+    Width="480"
+    Height="550"
+    Background="#121212"
     ResizeMode="NoResize"
     WindowStartupLocation="CenterOwner"
     WindowStyle="ToolWindow">
-    <Grid Margin="10">
+
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TextBlock
-            x:Name="PlaylistNameText"
-            Margin="0,0,0,10"
-            FontSize="16"
-            FontWeight="Bold"
-            TextAlignment="Center" />
+        <!--  Header  -->
+        <Border
+            Grid.Row="0"
+            Padding="18"
+            Background="{StaticResource CardBrush}"
+            BorderBrush="#22FFFFFF"
+            BorderThickness="0,0,0,1"
+            Style="{StaticResource Card}">
+            <Grid>
+                <TextBlock Style="{StaticResource TitleText}" Text="Confirm playlist" />
+                <Border
+                    Height="4"
+                    VerticalAlignment="Bottom"
+                    Background="{StaticResource AccentBrush}"
+                    CornerRadius="2"
+                    Opacity="0.9" />
+            </Grid>
+        </Border>
 
-        <Image
-            x:Name="PlaylistImage"
+        <!--  Content Card  -->
+        <Border
             Grid.Row="1"
-            Source="/Images/no_image.png"
-            Width="200"
-            Height="200"
-            HorizontalAlignment="Center" />
+            Margin="24"
+            Padding="24"
+            Background="{StaticResource CardBrush}"
+            CornerRadius="14"
+            Style="{StaticResource Card}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="16" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="16" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
-        <StackPanel
+                <!--  Playlist name  -->
+                <TextBlock
+                    x:Name="PlaylistNameText"
+                    Grid.Row="0"
+                    Margin="0,0,0,0"
+                    HorizontalAlignment="Center"
+                    FontWeight="Bold"
+                    Style="{StaticResource SubtitleText}"
+                    TextAlignment="Center" />
+
+                <!--  Cover image with rounded corners  -->
+                <Border
+                    Grid.Row="2"
+                    Width="220"
+                    Height="220"
+                    HorizontalAlignment="Center"
+                    Background="#1E1E1E"
+                    BorderBrush="#22FFFFFF"
+                    BorderThickness="1"
+                    ClipToBounds="True"
+                    CornerRadius="12">
+                    <Image
+                        x:Name="PlaylistImage"
+                        Source="/Images/no_image.png"
+                        Stretch="UniformToFill" />
+                </Border>
+
+                <!--  Buttons  -->
+                <StackPanel
+                    Grid.Row="4"
+                    Margin="0,8,0,0"
+                    HorizontalAlignment="Center"
+                    Orientation="Horizontal">
+                    <Button
+                        Width="120"
+                        Height="36"
+                        Margin="6,0"
+                        Click="Confirm_Click"
+                        Style="{StaticResource PrimaryButton}">
+                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                            <TextBlock
+                                Margin="0,0,6,0"
+                                FontFamily="Segoe MDL2 Assets"
+                                FontSize="16"
+                                Text="&#xE8FB;" />
+                            <TextBlock Text="Confirm" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Width="120"
+                        Height="36"
+                        Margin="6,0"
+                        Click="Cancel_Click"
+                        Style="{StaticResource PrimaryButton}">
+                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                            <TextBlock
+                                Margin="0,0,6,0"
+                                FontFamily="Segoe MDL2 Assets"
+                                FontSize="16"
+                                Text="&#xE711;" />
+                            <TextBlock Text="Cancel" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!--  Footer accent (opcional)  -->
+        <Border
             Grid.Row="2"
-            Margin="0,10,0,0"
-            HorizontalAlignment="Center"
-            Orientation="Horizontal">
-            <Button
-                Width="80"
-                Margin="10,0"
-                Click="Confirm_Click"
-                Content="Confirm" />
-            <Button
-                Width="80"
-                Margin="10,0"
-                Click="Cancel_Click"
-                Content="Cancel" />
-        </StackPanel>
+            Height="2"
+            Background="{StaticResource AccentBrush}"
+            Opacity="0.6" />
     </Grid>
 </Window>

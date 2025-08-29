@@ -16,20 +16,18 @@
             Log.Info($"ffmpeg ruta: {ffmpegPath}");
         }
 
-        public async Task DownloadMp3Async(string query, string outputDirectory, SpotifyPlayListDownloader.Clases.PlayListTracks.Item item)
+        public async Task DownloadMp3Async(string query, string title, string outputDirectory, object item, string? albumName, AlbumSongs.Root? album = null)
         {
             Log.Info($"Emepzando descarga: {query}");
             try
             {
-                var path = System.IO.Path.Combine(outputDirectory, query + ".mp3");
-
                 // Sanitizar el nombre del archivo
-                string sanitizedQuery = string.Join("_", query.Split(System.IO.Path.GetInvalidFileNameChars()));
-                string output = System.IO.Path.Combine(outputDirectory, $"{sanitizedQuery}.mp3");
+                string sanitizedTitle = string.Join("_", title.Split(System.IO.Path.GetInvalidFileNameChars()));
+                string output = System.IO.Path.Combine(outputDirectory, $"{sanitizedTitle}.mp3");
 
-                if (File.Exists(path))
+                if (File.Exists(output))
                 {
-                    Log.Info($"El archivo ya existe: {path}");
+                    Log.Info($"El archivo ya existe: {output}");
                     return;
                 }
 
@@ -65,20 +63,33 @@
                 if (process.ExitCode != 0)
                 {
                     Log.Error($"yt-dlp a falldo con codigo de salida {process.ExitCode}. Error: {stdErr}. Query: {query}");
-
-                    DateTime releaseDate;
-                    if (!string.IsNullOrWhiteSpace(item.track.album.release_date) && DateTime.TryParse(item.track.album.release_date, out releaseDate)) { }
-                    else releaseDate = DateTime.MinValue;
-                    SetMp3Metadata(output, item.track.name, item.track.artists.Select(a => a.name).ToArray(), item.track.album.name, (uint)releaseDate.Year);
                 }
                 else
                 {
-                    Log.Info($"yt-dlp descarga exitosa: {query}");
-                    DateTime releaseDate;
-                    if (!string.IsNullOrWhiteSpace(item.track.album.release_date) && DateTime.TryParse(item.track.album.release_date, out releaseDate)) { }
-                    else releaseDate = DateTime.MinValue;
+                    if (item is SpotifyPlayListDownloader.Clases.PlayListTracks.Item item2)
+                    {
+                        Log.Info($"yt-dlp descarga exitosa: {query}");
+                        DateTime releaseDate;
+                        if (!string.IsNullOrWhiteSpace(item2.track.album.release_date) && DateTime.TryParse(item2.track.album.release_date, out releaseDate)) { }
+                        else releaseDate = DateTime.MinValue;
 
-                    SetMp3Metadata(output, item.track.name, item.track.artists.Select(a => a.name).ToArray(), item.track.album.name, (uint)releaseDate.Year);
+                        SetMp3Metadata(output, item2.track.name, item2.track.artists.Select(a => a.name).ToArray(), item2.track.album.name, (uint)releaseDate.Year);
+                    }
+                    else if (item is AlbumSongs.Item item3)
+                    {
+                        Log.Info($"yt-dlp descarga exitosa: {query}");
+
+                        uint date = 0;
+
+                        if (album != null)
+                        {
+                            var year = album.release_date.Split("-")[0];
+                            if (uint.TryParse(year, out date)) { }
+                            else date = 0;
+                        }
+
+                        SetMp3Metadata(output, item3.name, item3.artists.Select(a => a.name).ToArray(), albumName, date);
+                    }
                 }
             }
             catch (Exception ex)

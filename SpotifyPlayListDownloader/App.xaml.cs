@@ -1,13 +1,19 @@
 ﻿namespace SpotifyPlayListDownloader
 {
-    /// <summary>
-    /// Interaction logic for App.xaml
-    /// </summary>
     public partial class App : Application
     {
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+
+            var appFolderName = "SpotifyDownloader";
+            var logsDir = Path.Combine(
+                System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData),
+                appFolderName, "Logs");
+
+            Directory.CreateDirectory(logsDir);
+
+            log4net.GlobalContext.Properties["LogDir"] = logsDir;
 
             ILoggerRepository repo = LogManager.GetRepository(Assembly.GetEntryAssembly());
             XmlConfigurator.Configure(repo, new FileInfo("log4net.config"));

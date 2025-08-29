@@ -3,76 +3,160 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="Spotify Playlist Downloader"
-    Width="500"
-    Height="250">
-    <Grid Margin="20">
+    Width="860"
+    Height="480"
+    Background="#121212"
+    WindowStartupLocation="CenterScreen">
+
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="Auto" />
-        </Grid.ColumnDefinitions>
 
-        <!--  Label + Playlist ID  -->
-        <Label
+        <!--  Header  -->
+        <Border
             Grid.Row="0"
-            Grid.Column="0"
-            Margin="0,0,10,10"
-            VerticalAlignment="Center"
-            Content="Playlist ID:" />
-        <TextBox
-            x:Name="PlaylistIdTextBox"
-            Grid.Row="0"
-            Grid.Column="1"
-            Margin="0,0,10,10" />
-        <Button
-            Grid.Row="0"
-            Grid.Column="2"
-            Width="25"
-            Height="25"
-            Click="ShowHelp_Click"
-            Content="?"
-            ToolTip="Como obtener el ID de la playlist" />
+            Padding="18"
+            Background="{StaticResource CardBrush}"
+            BorderBrush="#22FFFFFF"
+            BorderThickness="0,0,0,1"
+            Style="{StaticResource Card}">
+            <Grid>
+                <TextBlock Style="{StaticResource TitleText}" Text="Descargar contenido" />
+                <Border
+                    Height="4"
+                    VerticalAlignment="Bottom"
+                    Background="{StaticResource AccentBrush}"
+                    CornerRadius="2"
+                    Opacity="0.9" />
+            </Grid>
+        </Border>
 
-        <!--  Label + Output folder + Button  -->
-        <Label
+        <!--  Center Card  -->
+        <Border
             Grid.Row="1"
-            Grid.Column="0"
-            Margin="0,0,10,10"
-            VerticalAlignment="Center"
-            Content="Desacargar en:" />
-        <TextBox
-            x:Name="OutputPathTextBox"
-            Grid.Row="1"
-            Grid.Column="1"
-            Margin="0,0,10,10" />
-        <Button
-            Grid.Row="1"
-            Grid.Column="2"
-            Width="80"
-            Margin="0,0,0,10"
-            Click="BrowseButton_Click"
-            Content="Explorar..." />
+            Margin="24"
+            Padding="24"
+            Background="{StaticResource CardBrush}"
+            CornerRadius="14"
+            Style="{StaticResource Card}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="12" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="12" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="16" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="180" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-        <!--  Download button  -->
-        <Button
+                <!--  Intro  -->
+                <TextBlock
+                    Grid.Row="0"
+                    Grid.ColumnSpan="3"
+                    Style="{StaticResource SubtitleText}"
+                    Text="Pegue la URL y elija la carpeta de destino." />
+
+                <!--  Playlist/Artist URL or ID  -->
+                <TextBlock
+                    Grid.Row="2"
+                    Grid.Column="0"
+                    VerticalAlignment="Center"
+                    Text="Playlist/Artist:" />
+
+                <TextBox
+                    x:Name="Url"
+                    Grid.Row="2"
+                    Grid.Column="1"
+                    MinWidth="320"
+                    Margin="8,0,8,0"
+                    ToolTip="Pegue aquí la URL completa o el ID" />
+
+                <Button
+                    Grid.Row="2"
+                    Grid.Column="2"
+                    Width="36"
+                    Height="36"
+                    Click="ShowHelp_Click"
+                    Style="{StaticResource PrimaryButton}"
+                    ToolTip="Cómo obtener el ID">
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        FontFamily="Segoe MDL2 Assets"
+                        FontSize="16"
+                        Text="&#xE946;" />
+                </Button>
+
+                <!--  Output folder  -->
+                <TextBlock
+                    Grid.Row="4"
+                    Grid.Column="0"
+                    VerticalAlignment="Center"
+                    Text="Descargar en:" />
+
+                <TextBox
+                    x:Name="OutputPathTextBox"
+                    Grid.Row="4"
+                    Grid.Column="1"
+                    MinWidth="320"
+                    Margin="8,0,8,0"
+                    ToolTip="Carpeta donde se guardarán los archivos" />
+
+                <Button
+                    Grid.Row="4"
+                    Grid.Column="2"
+                    Height="36"
+                    MinWidth="120"
+                    Margin="0,0,0,0"
+                    Click="BrowseButton_Click"
+                    Content="Explorar…"
+                    Style="{StaticResource PrimaryButton}" />
+
+                <!--  Download  -->
+                <StackPanel
+                    Grid.Row="6"
+                    Grid.ColumnSpan="3"
+                    HorizontalAlignment="Left"
+                    Orientation="Horizontal">
+                    <Button
+                        Width="200"
+                        Height="40"
+                        Click="DownloadButton_Click"
+                        Style="{StaticResource PrimaryButton}">
+                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                            <TextBlock
+                                Margin="0,0,8,0"
+                                FontFamily="Segoe MDL2 Assets"
+                                FontSize="16"
+                                Text="&#xE896;" />
+                            <TextBlock Text="Descargar Canciones" />
+                        </StackPanel>
+                    </Button>
+
+                    <TextBlock
+                        x:Name="lblStatus"
+                        Margin="8,0,0,0"
+                        VerticalAlignment="Center"
+                        Opacity="0.85"
+                        TextWrapping="Wrap" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!--  Footer accent (opcional)  -->
+        <Border
             Grid.Row="2"
-            Grid.Column="1"
-            Width="150"
-            Height="35"
-            HorizontalAlignment="Left"
-            Click="DownloadButton_Click"
-            Content="Desacargar Canciones" />
-
-        <Label
-            x:Name="lblStatus"
-            Grid.Row="3"
-            Grid.Column="1" />
+            Height="2"
+            Background="{StaticResource AccentBrush}"
+            Opacity="0.6" />
     </Grid>
 </Window>
