@@ -65,7 +65,7 @@
                         <UniformGrid
                             Margin="0,8,0,0"
                             Columns="2"
-                            Rows="1">
+                            Rows="2">
                             <Button
                                 x:Name="btnDownloadPlayList"
                                 Margin="6"
@@ -95,6 +95,22 @@
                                         FontSize="16"
                                         Text="" />
                                     <TextBlock Text="Descargar Artista" />
+                                </StackPanel>
+                            </Button>
+
+                            <Button
+                                x:Name="btnOpenLogs"
+                                Margin="6"
+                                Click="btnOpenLogs_Click"
+                                Style="{StaticResource PrimaryButton}"
+                                ToolTip="Abrir carpeta de logs">
+                                <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                    <TextBlock
+                                        Margin="0,0,8,0"
+                                        FontFamily="Segoe MDL2 Assets"
+                                        FontSize="16"
+                                        Text="" />
+                                    <TextBlock Text="Abrir Logs" />
                                 </StackPanel>
                             </Button>
                         </UniformGrid>

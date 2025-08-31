@@ -1,17 +1,22 @@
 ﻿namespace SpotifyPlayListDownloader
 {
-    /// <summary>
-    /// Lógica de interacción para Main.xaml
-    /// </summary>
     public partial class Main : Window
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof(Main));
+
+        #region Constructor
 
         public Main()
         {
             InitializeComponent();
             Log.Info("Main iniciado");
         }
+
+        #endregion Constructor
+
+        #region Eventos
+
+        #region Botones
 
         private void btnDownloadPlayList_Click(object sender, RoutedEventArgs e)
         {
@@ -43,5 +48,23 @@
                 MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+        private void btnOpenLogs_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var path = log4net.GlobalContext.Properties["LogDir"];
+                Process.Start("explorer.exe", "/select,\"" + path + "\"");
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Error al abrir la ventana de descarga de playlist", ex);
+                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        #endregion Botones
+
+        #endregion Eventos
     }
 }
