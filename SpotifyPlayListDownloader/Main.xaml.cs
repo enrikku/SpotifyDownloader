@@ -54,6 +54,10 @@
             try
             {
                 var path = log4net.GlobalContext.Properties["LogDir"];
+
+                if (path == null) return;
+                if (!Directory.Exists(path.ToString())) return;
+
                 Process.Start("explorer.exe", "/select,\"" + path + "\"");
             }
             catch (Exception ex)
