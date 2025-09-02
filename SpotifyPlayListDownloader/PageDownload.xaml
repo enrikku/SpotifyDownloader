@@ -15,7 +15,6 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!--  Header  -->
         <Border
             Grid.Row="0"
             Padding="18"
@@ -34,7 +33,6 @@
             </Grid>
         </Border>
 
-        <!--  Center Card  -->
         <Border
             Grid.Row="1"
             Margin="24"
@@ -43,13 +41,24 @@
             CornerRadius="14"
             Style="{StaticResource Card}">
             <Grid>
+
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
+
                     <RowDefinition Height="12" />
+
                     <RowDefinition Height="Auto" />
+
                     <RowDefinition Height="12" />
+
                     <RowDefinition Height="Auto" />
+
+                    <RowDefinition Height="12" />
+
+                    <RowDefinition Height="Auto" />
+
                     <RowDefinition Height="16" />
+
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
@@ -121,12 +130,41 @@
                     Content="Explorar…"
                     Style="{StaticResource PrimaryButton}" />
 
+                <!--  Check: Crear en una sola carpeta  -->
+                <CheckBox
+                    x:Name="chkSingleFolder"
+                    Grid.Row="6"
+                    Grid.ColumnSpan="3"
+                    Margin="0,0,0,0"
+                    Content="Crear en una sola carpeta"
+                    ToolTip="Si está activo, todo el contenido se descargará dentro de la misma carpeta, sin subcarpetas por artista/álbum." />
+
                 <!--  Download  -->
                 <StackPanel
-                    Grid.Row="6"
+                    Grid.Row="8"
                     Grid.ColumnSpan="3"
                     HorizontalAlignment="Left"
                     Orientation="Horizontal">
+
+                    <!--  Importar  -->
+                    <Button
+                        x:Name="ImportButton"
+                        Width="140"
+                        Height="40"
+                        Margin="0,0,10,0"
+                        Click="ImportButton_Click"
+                        Style="{StaticResource PrimaryButton}"
+                        ToolTip="Importa un .txt con una URL de artista por línea">
+                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                            <TextBlock
+                                Margin="0,0,8,0"
+                                FontFamily="Segoe MDL2 Assets"
+                                FontSize="16"
+                                Text="&#xE8B7;" />
+                            <TextBlock Text="Importar…" />
+                        </StackPanel>
+                    </Button>
+
                     <Button
                         Width="200"
                         Height="40"
