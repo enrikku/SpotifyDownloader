@@ -1,4 +1,6 @@
-﻿namespace SpotifyPlayListDownloader
+﻿using MessageBox = System.Windows.MessageBox;
+
+namespace SpotifyPlayListDownloader
 {
     public partial class Main : Window
     {

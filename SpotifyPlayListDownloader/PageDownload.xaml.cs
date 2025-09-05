@@ -1,4 +1,6 @@
-﻿using static SpotifyPlayListDownloader.Clases.PlayListTracks;
+﻿using Application = System.Windows.Application;
+using MessageBox = System.Windows.MessageBox;
+using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 
 namespace SpotifyPlayListDownloader
 {
@@ -172,13 +174,10 @@ namespace SpotifyPlayListDownloader
 
                     lblStatus.Text = $"Completadas: {completed}/{total}";
 
-                    var end = DateTime.Now;
-                    var elapsed = end - start;
+                    var time = DateTime.Now - start;
 
-                    string elapsedFormatted = $"{(int)elapsed.TotalHours:00}h {elapsed.Minutes:00}m {elapsed.Seconds:00}s";
-
-                    Log.Info($"Importado {lines.Count} {_type}s en {elapsedFormatted}.");
-                    MessageBox.Show($"Importado {lines.Count} {_type}s en {elapsedFormatted}.", "Importar", MessageBoxButton.OK, MessageBoxImage.Information);
+                    Log.Info($"Importado {lines.Count} {_type}s en {time}.");
+                    NotifyHelper.ShowNotification($"Descarga completada. Tiempo de descarga: {time.Hours}h {time.Minutes}m {time.Seconds}s", "Info", 5000, "icon.ico");
                 }
             }
             catch (Exception ex)
@@ -323,22 +322,11 @@ namespace SpotifyPlayListDownloader
 
                     var end = DateTime.Now;
                     var time = end - start;
-                    
+
                     lblStatus.Text = $"Tiempo de descarga: {time.Hours}h {time.Minutes}m {time.Seconds}s";
                     Log.Info($"Descarga completada. Tiempo total: {time}");
 
-                    var main = Application.Current.MainWindow;
-                    if (main != null)
-                    {
-                        if (main.WindowState == WindowState.Minimized) main.WindowState = WindowState.Normal;
-
-                        main.Activate();
-                        main.Topmost = true;
-                        main.Topmost = false;
-
-                        MessageBox.Show(main, "Descarga completa.", "Spotify Downloader",
-                                        MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
+                    NotifyHelper.ShowNotification($"Descarga completada. Tiempo de descarga: {time.Hours}h {time.Minutes}m {time.Seconds}s", "Info", 5000, "icon.ico");
                 }
                 else
                 {
@@ -835,6 +823,8 @@ namespace SpotifyPlayListDownloader
                     var time = end - start;
                     lblStatus.Text = $"Tiempo de descarga: {time.Hours}h {time.Minutes}m {time.Seconds}s";
                     Log.Info($"Descarga completada. Tiempo total: {time}");
+
+                    NotifyHelper.ShowNotification($"Descarga completada. Tiempo de descarga: {time.Hours}h {time.Minutes}m {time.Seconds}s", "Info", 5000, "icon.ico");
                 }
             }
             catch (Exception ex)

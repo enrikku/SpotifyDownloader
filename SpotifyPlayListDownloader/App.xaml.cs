@@ -1,4 +1,6 @@
-﻿namespace SpotifyPlayListDownloader
+﻿using Application = System.Windows.Application;
+
+namespace SpotifyPlayListDownloader
 {
     public partial class App : Application
     {
