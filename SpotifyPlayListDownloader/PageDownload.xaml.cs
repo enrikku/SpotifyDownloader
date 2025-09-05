@@ -1,4 +1,5 @@
-﻿using Application = System.Windows.Application;
+﻿using static SpotifyPlayListDownloader.Clases.PlayListTracks;
+using Application = System.Windows.Application;
 using MessageBox = System.Windows.MessageBox;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 
@@ -434,6 +435,7 @@ namespace SpotifyPlayListDownloader
                                     foreach (var artist in track.artists)
                                         newTracks.artists.Add(artist.name);
 
+                                    newTracks.albumImage = album.images[0].url;
                                     newTracks.album = albumName;
                                     newTracks.year = year;
                                     newTracks.isDownloaded = false;
@@ -498,6 +500,7 @@ namespace SpotifyPlayListDownloader
                                     foreach (var artist in track.artists)
                                         newTracks.artists.Add(artist.name);
 
+                                    newTracks.albumImage = album.images[0].url;
                                     newTracks.album = albumName;
                                     newTracks.year = year;
                                     newTracks.isDownloaded = false;
@@ -564,6 +567,7 @@ namespace SpotifyPlayListDownloader
                                     foreach (var artist in track.artists)
                                         newTracks.artists.Add(artist.name);
 
+                                    newTracks.albumImage = appear.images[0].url;
                                     newTracks.album = appearName;
                                     newTracks.year = year;
                                     newTracks.isDownloaded = false;

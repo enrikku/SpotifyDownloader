@@ -8,5 +8,6 @@
         public uint year = 0;
         public bool isDownloaded = false;
         public string path = "";
+        public string albumImage = "";
     }
 }

@@ -1,4 +1,7 @@
-﻿namespace SpotifyPlayListDownloader.Services
+﻿using TagLib;
+using File = System.IO.File;
+
+namespace SpotifyPlayListDownloader.Services
 {
     public class DownloaderService
     {
@@ -6,6 +9,11 @@
 
         private readonly string ytDlpPath;
         private readonly string ffmpegPath;
+
+        private static readonly HttpClient _http = new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(30)
+        };
 
         public DownloaderService()
         {
@@ -191,7 +199,7 @@
             }
         }
 
-        public void SetMp3Metadata2(TrackInfo track)
+        public async Task SetMp3Metadata2(TrackInfo track)
         {
             Log.Debug($"Estableciendo metadatos para {track.path}");
             if (File.Exists(track.path) == false)
@@ -206,6 +214,32 @@
                 file.Tag.Performers = new string[] { string.Join(", ", track.artists) };
                 file.Tag.Album = track.album;
                 file.Tag.Year = track.year;
+
+                if (!string.IsNullOrWhiteSpace(track.albumImage))
+                {
+                    // Descarga la imagen
+                    using var resp = await _http.GetAsync(track.albumImage, HttpCompletionOption.ResponseHeadersRead);
+                    resp.EnsureSuccessStatusCode();
+
+                    var contentType = resp.Content.Headers.ContentType?.MediaType; // p.ej. "image/jpeg"
+                    var bytes = await resp.Content.ReadAsByteArrayAsync();
+
+                    // Si el servidor no envía Content-Type, infiérelo por extensión
+                    contentType ??= GuessMimeFromUrl(track.albumImage);
+
+                    // IMPORTANTE: TagLib.Picture.Data es ByteVector
+                    var picture = new TagLib.Picture
+                    {
+                        Type = PictureType.FrontCover,
+                        Description = "Cover",
+                        MimeType = contentType,
+                        Data = new TagLib.ByteVector(bytes)
+                    };
+
+                    // Reemplaza portadas previas; si quieres conservarlas, combina arrays
+                    file.Tag.Pictures = new IPicture[] { picture };
+                }
+
                 file.Save();
                 Log.Info($"Metadatos establecidos para {track.path}");
             }
@@ -215,111 +249,18 @@
             }
         }
 
-
-        public async Task DownloadMp3Async(string query, string title, string outputDirectory, object item, string? albumName, AlbumSongs.Root? album = null)
+        private static string GuessMimeFromUrl(string url)
         {
-            Log.Info($"Emepzando descarga: {query}");
-            try
+            var ext = Path.GetExtension(new Uri(url).AbsolutePath).ToLowerInvariant();
+            return ext switch
             {
-                // Sanitizar el nombre del archivo
-                string sanitizedTitle = string.Join("_", title.Split(System.IO.Path.GetInvalidFileNameChars()));
-                string output = System.IO.Path.Combine(outputDirectory, $"{sanitizedTitle}.mp3");
-
-                if (File.Exists(output))
-                {
-                    Log.Info($"El archivo ya existe: {output}");
-                    return;
-                }
-
-                string search = $"ytsearch1:{query}";
-                string args = $"-x --audio-format mp3 --ffmpeg-location \"{ffmpegPath}\" -o \"{output}\" \"{search}\"";
-
-                Log.Debug($"yt-dlp argumentos: {args}");
-
-                var process = new Process
-                {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = ytDlpPath,
-                        Arguments = args,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        StandardOutputEncoding = Encoding.UTF8,
-                        StandardErrorEncoding = Encoding.UTF8
-                    }
-                };
-
-                process.Start();
-                Log.Debug("yt-dlp proceso iniciado");
-
-                string stdOut = await process.StandardOutput.ReadToEndAsync();
-                string stdErr = await process.StandardError.ReadToEndAsync();
-
-                process.WaitForExit();
-                Log.Debug("yt-dlp proceso finalizado");
-
-                if (process.ExitCode != 0)
-                {
-                    Log.Error($"yt-dlp a falldo con codigo de salida {process.ExitCode}. Error: {stdErr}. Query: {query}");
-                }
-                else
-                {
-                    if (item is SpotifyPlayListDownloader.Clases.PlayListTracks.Item item2)
-                    {
-                        Log.Info($"yt-dlp descarga exitosa: {query}");
-                        DateTime releaseDate;
-                        if (!string.IsNullOrWhiteSpace(item2.track.album.release_date) && DateTime.TryParse(item2.track.album.release_date, out releaseDate)) { }
-                        else releaseDate = DateTime.MinValue;
-
-                        SetMp3Metadata(output, item2.track.name, item2.track.artists.Select(a => a.name).ToArray(), item2.track.album.name, (uint)releaseDate.Year);
-                    }
-                    else if (item is AlbumSongs.Item item3)
-                    {
-                        Log.Info($"yt-dlp descarga exitosa: {query}");
-
-                        uint date = 0;
-
-                        if (album != null)
-                        {
-                            var year = album.release_date.Split("-")[0];
-                            if (uint.TryParse(year, out date)) { }
-                            else date = 0;
-                        }
-
-                        SetMp3Metadata(output, item3.name, item3.artists.Select(a => a.name).ToArray(), albumName, date);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"Exception in DownloadMp3Async for {query}: {ex.Message}", ex);
-            }
-        }
-
-        public void SetMp3Metadata(string filePath, string title, string[] artist, string album, uint year)
-        {
-            Log.Debug($"Estableciendo metadatos para {filePath}");
-            if (File.Exists(filePath) == false)
-            {
-                Log.Warn($"Fichero no encontrado para establecer metadatos: {filePath}");
-                return;
-            }
-            try
-            {
-                var file = TagLib.File.Create(filePath);
-                file.Tag.Title = title;
-                file.Tag.Performers = artist;
-                file.Tag.Album = album;
-                file.Tag.Year = year;
-                file.Save();
-                Log.Info($"Metadatos establecidos para {filePath}");
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"Error estableciendo metadatos para {filePath}: {ex.Message}", ex);
-            }
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".bmp" => "image/bmp",
+                ".gif" => "image/gif",
+                ".webp" => "image/webp", // ojo: no todos los players la muestran
+                _ => "image/jpeg"
+            };
         }
     }
 }
