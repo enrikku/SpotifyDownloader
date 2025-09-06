@@ -1,7 +1,4 @@
-﻿using System;
-using System.Windows.Forms;
-
-namespace SpotifyPlayListDownloader.Helpers
+﻿namespace SpotifyPlayListDownloader.Helpers
 {
     public static class NotifyHelper
     {

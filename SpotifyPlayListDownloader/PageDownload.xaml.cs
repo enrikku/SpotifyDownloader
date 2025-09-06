@@ -1,5 +1,4 @@
-﻿using static SpotifyPlayListDownloader.Clases.PlayListTracks;
-using Application = System.Windows.Application;
+﻿using Application = System.Windows.Application;
 using MessageBox = System.Windows.MessageBox;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 
@@ -9,9 +8,13 @@ namespace SpotifyPlayListDownloader
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof(PageDownload));
         private readonly TYPE_DOWNLOAD _type;
-        private readonly string _title = "";
 
         private List<TrackInfo> llTracks = new List<TrackInfo>();
+        private List<TrackInfo> llImportTracks = new List<TrackInfo>();
+
+        private readonly AppConfig? appConfig = null;
+        private readonly SpotifyService? spotify = null;
+        private readonly DownloaderService downloaderService = new DownloaderService();
 
         #region "Constructor"
 
@@ -20,20 +23,16 @@ namespace SpotifyPlayListDownloader
             InitializeComponent();
             _type = type;
 
-            if (_type == TYPE_DOWNLOAD.PLAY_LIST)
-            {
-                _title = "Spotify Playlist Downloader";
-                ImportButton.Visibility = Visibility.Hidden;
-            }
-            else if (_type == TYPE_DOWNLOAD.ARTIST) _title = "Spotify Artist Downloader";
-            else _title = "Spotify Downloader";
-
-            this.Title = _title;
+            if (_type == TYPE_DOWNLOAD.ARTIST) this.Title = "Spotify Artist Downloader";
+            else this.Title = "Spotify PlayList Downloader";
 
             Log.Info("MainWindow iniciado");
             string musicPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic));
             OutputPathTextBox.Text = musicPath;
             Log.Debug($"Ruta de descarga por defecto: {musicPath}");
+
+            appConfig = ConfigHelper.LoadConfig();
+            spotify = new SpotifyService(appConfig.Spotify.ClientId, appConfig.Spotify.ClientSecret);
         }
 
         #endregion "Constructor"
@@ -109,7 +108,7 @@ namespace SpotifyPlayListDownloader
                 {
                     if (_type == TYPE_DOWNLOAD.PLAY_LIST)
                     {
-                        if (!SpotifyHelper.TryGetSpotifyArtistId(line, out var artistId))
+                        if (!SpotifyHelper.TryGetSpotifyPlaylistId(line, out var artistId))
                         {
                             Log.Error($"La URL/URI '{line}' no es una URL de una playlist de Spotify válida.");
                             MessageBox.Show($"La URL/URI '{line}' no es una URL de una playlist de Spotify válida.", "Importar", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -131,7 +130,7 @@ namespace SpotifyPlayListDownloader
 
                 if (allLinesAreValid)
                 {
-                    llTracks.Clear();
+                    llImportTracks.Clear();
 
                     var start = DateTime.Now;
                     foreach (var line in lines)
@@ -140,45 +139,7 @@ namespace SpotifyPlayListDownloader
                         await Download(true);
                     }
 
-                    var downloadService = new DownloaderService();
-
-                    var semaphore = new SemaphoreSlim(5);
-                    int total = llTracks.Count;
-                    int completed = 0;
-
-                    lblStatus.Text = $"Completadas: 0/{total}";
-
-                    var tasks = new List<Task>();
-
-                    foreach (var track in llTracks)
-                    {
-                        await semaphore.WaitAsync();
-                        tasks.Add(Task.Run(() =>
-                        {
-                            try
-                            {
-                                downloadService.DownloadMp3(track);
-                            }
-                            finally
-                            {
-                                int done = Interlocked.Increment(ref completed);
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    lblStatus.Text = $"{done}/{total}";
-                                });
-                                semaphore.Release();
-                            }
-                        }));
-                    }
-
-                    await Task.WhenAll(tasks);
-
-                    lblStatus.Text = $"Completadas: {completed}/{total}";
-
-                    var time = DateTime.Now - start;
-
-                    Log.Info($"Importado {lines.Count} {_type}s en {time}.");
-                    NotifyHelper.ShowNotification($"Descarga completada. Tiempo de descarga: {time.Hours}h {time.Minutes}m {time.Seconds}s", "Info", 5000, "icon.ico");
+                    Download(llImportTracks);
                 }
             }
             catch (Exception ex)
@@ -216,6 +177,58 @@ namespace SpotifyPlayListDownloader
             }
         }
 
+        private async void Download(List<TrackInfo> tracks)
+        {
+            try
+            {
+                var start = DateTime.Now;
+                var semaphore = new SemaphoreSlim(5);
+                int total = tracks.Count;
+                int completed = 0;
+
+                lblStatus.Text = $"Completadas: 0/{total}";
+
+                var tasks = new List<Task>();
+
+                foreach (var track in tracks)
+                {
+                    await semaphore.WaitAsync();
+                    tasks.Add(Task.Run(() =>
+                    {
+                        try
+                        {
+                            downloaderService.DownloadMp3(track);
+                        }
+                        finally
+                        {
+                            int done = Interlocked.Increment(ref completed);
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                lblStatus.Text = $"{done}/{total}";
+                            });
+                            semaphore.Release();
+                        }
+                    }));
+                }
+
+                await Task.WhenAll(tasks);
+
+                lblStatus.Text = $"Completadas: {completed}/{total}";
+
+                var end = DateTime.Now;
+                var time = end - start;
+                lblStatus.Text = $"Tiempo de descarga: {time.Hours}h {time.Minutes}m {time.Seconds}s";
+                Log.Info($"Descarga completada. Tiempo total: {time}");
+
+                NotifyHelper.ShowNotification($"Descarga completada. Tiempo de descarga: {time.Hours}h {time.Minutes}m {time.Seconds}s", "Info", 5000, "icon.ico");
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Error al abrir la ventana de descarga", ex);
+                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         #region "Descargar PlayList"
 
         private async Task DownloadPlayList(bool isImport = false)
@@ -238,9 +251,11 @@ namespace SpotifyPlayListDownloader
                 return;
             }
 
-            var config = ConfigHelper.LoadConfig();
-            var spotify = new SpotifyService(config.Spotify.ClientId, config.Spotify.ClientSecret);
-            var yt = new DownloaderService();
+            if (spotify == null)
+            {
+                MessageBox.Show("Error al obtener el servicio de Spotify. Por favor, cierra y vuelve a abrir la aplicación.");
+                return;
+            }
 
             try
             {
@@ -254,80 +269,66 @@ namespace SpotifyPlayListDownloader
                     var playlistName = playlist.name;
                     Log.Info($"Playlist encontrada: {playlistName}, con {playlist.tracks.items.Count} canciones");
 
-                    var dialog = new PlaylistConfirmDialog(playlistName, imageUrl);
-                    dialog.Owner = this;
-                    dialog.ShowDialog();
-
-                    if (!dialog.IsConfirmed)
+                    if (!isImport)
                     {
-                        MessageBox.Show("Descarga cancelada.");
-                        Log.Info("Descarga cancelada por el usuario");
-                        return;
-                    }
+                        var dialog = new PlaylistConfirmDialog(playlistName, imageUrl);
+                        dialog.Owner = this;
+                        dialog.ShowDialog();
 
-                    this.Title = $"{_title} - {playlistName}";
+                        if (!dialog.IsConfirmed)
+                        {
+                            MessageBox.Show("Descarga cancelada.");
+                            Log.Info("Descarga cancelada por el usuario");
+                            return;
+                        }
+                    }
 
                     var llTracksPlayList = new List<TrackInfo>();
 
-                    foreach (var track in playlist.tracks.items)
+                    if (isImport)
                     {
-                        var loTrackInfo = new TrackInfo();
-
-                        loTrackInfo.album = track.track.album.name;
-                        loTrackInfo.name = track.track.name;
-                        foreach (var artist in track.track.artists) loTrackInfo.artists.Add(artist.name);
-
-                        uint year = 0;
-                        if (!string.IsNullOrEmpty(track.track.album.release_date) && track.track.album.release_date.Length != 4)
-                            year = uint.Parse(track.track.album.release_date.Substring(0, 4));
-
-                        loTrackInfo.year = year;
-                        loTrackInfo.path = Path.Combine(outputPath, playlistName, $"{loTrackInfo.name}.mp3");
-                        llTracksPlayList.Add(loTrackInfo);
-                    }
-
-                    var start = DateTime.Now;
-                    var downloadService = new DownloaderService();
-                    var semaphore = new SemaphoreSlim(5);
-                    int total = llTracksPlayList.Count;
-                    int completed = 0;
-
-                    lblStatus.Text = $"Completadas: 0/{total}";
-
-                    var tasks = new List<Task>();
-
-                    foreach (var track in llTracksPlayList)
-                    {
-                        await semaphore.WaitAsync();
-                        tasks.Add(Task.Run(() =>
+                        foreach (var track in playlist.tracks.items)
                         {
-                            try
-                            {
-                                downloadService.DownloadMp3(track);
-                            }
-                            finally
-                            {
-                                int done = Interlocked.Increment(ref completed);
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    lblStatus.Text = $"{done}/{total}";
-                                });
-                                semaphore.Release();
-                            }
-                        }));
+                            var loTrackInfo = new TrackInfo();
+
+                            loTrackInfo.album = track.track.album.name;
+                            loTrackInfo.name = track.track.name;
+                            foreach (var artist in track.track.artists) loTrackInfo.artists.Add(artist.name);
+
+                            uint year = 0;
+                            if (!string.IsNullOrEmpty(track.track.album.release_date) && track.track.album.release_date.Length != 4)
+                                year = uint.Parse(track.track.album.release_date.Substring(0, 4));
+
+                            loTrackInfo.albumImage = track.track.album.images[0].url;
+
+                            loTrackInfo.year = year;
+                            loTrackInfo.path = Path.Combine(outputPath, playlistName, $"{loTrackInfo.name}.mp3");
+                            llImportTracks.Add(loTrackInfo);
+                        }
                     }
+                    else
+                    {
+                        foreach (var track in playlist.tracks.items)
+                        {
+                            var loTrackInfo = new TrackInfo();
 
-                    await Task.WhenAll(tasks);
+                            loTrackInfo.album = track.track.album.name;
+                            loTrackInfo.name = track.track.name;
+                            foreach (var artist in track.track.artists) loTrackInfo.artists.Add(artist.name);
 
-                    lblStatus.Text = $"Completadas: {completed}/{total}";
+                            uint year = 0;
+                            if (!string.IsNullOrEmpty(track.track.album.release_date) && track.track.album.release_date.Length != 4)
+                                year = uint.Parse(track.track.album.release_date.Substring(0, 4));
 
-                    var end = DateTime.Now;
-                    var time = end - start;
+                            loTrackInfo.albumImage = track.track.album.images[0].url;
 
-                    lblStatus.Text = $"Tiempo de descarga: {time.Hours}h {time.Minutes}m {time.Seconds}s";
-                    Log.Info($"Descarga completada. Tiempo total: {time}");
+                            loTrackInfo.year = year;
+                            loTrackInfo.path = Path.Combine(outputPath, playlistName, $"{loTrackInfo.name}.mp3");
+                            llTracksPlayList.Add(loTrackInfo);
+                        }
 
-                    NotifyHelper.ShowNotification($"Descarga completada. Tiempo de descarga: {time.Hours}h {time.Minutes}m {time.Seconds}s", "Info", 5000, "icon.ico");
+                        Download(llTracksPlayList);
+                    }
                 }
                 else
                 {
@@ -344,6 +345,240 @@ namespace SpotifyPlayListDownloader
         #endregion "Descargar PlayList"
 
         #region "Descargar Artista"
+
+        private async Task<List<TrackInfo>> ProcesArtisAlbum(ArtistSongs.Root albumArtist, string artistName, string outputPath)
+        {
+            var llTracksAlbums = new List<TrackInfo>();
+            try
+            {
+                if (albumArtist != null)
+                {
+                    int totalAlbums = albumArtist.items.Count;
+                    int albumIndex = 1;
+
+                    foreach (var album in albumArtist.items)
+                    {
+                        string albumName = PathHelper.SanitizeSimple(album.name);
+                        lblStatus.Text = $"Procesando álbum {albumIndex}/{totalAlbums}: {albumName} de {artistName}...";
+
+                        if (chkSingleFolder.IsChecked == false)
+                        {
+                            if (!Directory.Exists(Path.Combine(outputPath, artistName, "Albums", albumName)))
+                                Directory.CreateDirectory(Path.Combine(outputPath, artistName, "Albums", albumName));
+                        }
+                        else
+                        {
+                            if (!Directory.Exists(Path.Combine(outputPath, artistName)))
+                                Directory.CreateDirectory(Path.Combine(outputPath, artistName));
+                        }
+
+                        await Task.Delay(50);
+
+                        uint year = 0;
+                        if (!string.IsNullOrEmpty(album.release_date) && album.release_date.Length != 4)
+                            year = uint.Parse(album.release_date.Substring(0, 4));
+
+                        var albumSongs = await spotify.GetSongAlumb(album.id);
+
+                        if (albumSongs != null)
+                        {
+                            int totalTracks = albumSongs.tracks.items.Count;
+                            int trackIndex = 1;
+
+                            foreach (var track in albumSongs.tracks.items)
+                            {
+                                var newTracks = new TrackInfo();
+                                var trackName = PathHelper.SanitizeSimple(track.name);
+
+                                newTracks.name = trackName;
+                                foreach (var artist in track.artists)
+                                    newTracks.artists.Add(artist.name);
+
+                                newTracks.albumImage = album.images[0].url;
+                                newTracks.album = albumName;
+                                newTracks.year = year;
+                                newTracks.isDownloaded = false;
+
+                                if (chkSingleFolder.IsChecked == false)
+                                    newTracks.path = Path.Combine(outputPath, artistName, "Albums", albumName, trackName + ".mp3");
+                                else
+                                    newTracks.path = Path.Combine(outputPath, artistName, trackName + ".mp3");
+
+                                lblStatus.Text = $"Álbum {albumIndex}/{totalAlbums}: {albumName} → {trackIndex}/{totalTracks} canciones procesadas";
+
+                                llTracksAlbums.Add(newTracks);
+                                trackIndex++;
+                            }
+                        }
+
+                        albumIndex++;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Error durante la descarga: {ex.Message}", ex);
+                return null;
+            }
+
+            return llTracksAlbums;
+        }
+
+        private async Task<List<TrackInfo>> ProcesEPSArtist(ArtistSongs.Root epsArtist, string artistName, string outputPath)
+        {
+            var llEPSTracks = new List<TrackInfo>();
+
+            try
+            {
+                if (epsArtist != null)
+                {
+                    int totalAlbums = epsArtist.items.Count;
+                    int albumIndex = 1;
+
+                    foreach (var album in epsArtist.items)
+                    {
+                        string albumName = PathHelper.SanitizeSimple(album.name);
+                        lblStatus.Text = $"Procesando álbum {albumIndex}/{totalAlbums}: {albumName} de {artistName}...";
+
+                        if (chkSingleFolder.IsChecked == false)
+                        {
+                            if (!Directory.Exists(Path.Combine(outputPath, artistName, "EPS", albumName)))
+                                Directory.CreateDirectory(Path.Combine(outputPath, artistName, "EPS", albumName));
+                        }
+                        else
+                        {
+                            if (!Directory.Exists(Path.Combine(outputPath, artistName)))
+                                Directory.CreateDirectory(Path.Combine(outputPath, artistName));
+                        }
+
+                        await Task.Delay(50);
+
+                        uint year = 0;
+                        if (!string.IsNullOrEmpty(album.release_date) && album.release_date.Length != 4)
+                            year = uint.Parse(album.release_date.Substring(0, 4));
+
+                        var albumSongs = await spotify.GetSongAlumb(album.id);
+
+                        if (albumSongs != null)
+                        {
+                            int totalTracks = albumSongs.tracks.items.Count;
+                            int trackIndex = 1;
+
+                            foreach (var track in albumSongs.tracks.items)
+                            {
+                                var newTracks = new TrackInfo();
+                                var trackName = PathHelper.SanitizeSimple(track.name);
+
+                                newTracks.name = trackName;
+                                foreach (var artist in track.artists)
+                                    newTracks.artists.Add(artist.name);
+
+                                newTracks.albumImage = album.images[0].url;
+                                newTracks.album = albumName;
+                                newTracks.year = year;
+                                newTracks.isDownloaded = false;
+
+                                if (chkSingleFolder.IsChecked == false)
+                                    newTracks.path = Path.Combine(outputPath, artistName, "EPS", albumName, trackName + ".mp3");
+                                else
+                                    newTracks.path = Path.Combine(outputPath, artistName, trackName + ".mp3");
+
+                                llEPSTracks.Add(newTracks);
+
+                                lblStatus.Text = $"Álbum {albumIndex}/{totalAlbums}: {albumName} → {trackIndex}/{totalTracks} canciones procesadas";
+                                trackIndex++;
+                            }
+                        }
+
+                        albumIndex++;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Error durante la descarga: {ex.Message}", ex);
+                return null;
+            }
+            return llEPSTracks;
+        }
+
+        private async Task<List<TrackInfo>> ProcesApearArtist(ArtistSongs.Root appearsOnArtist, string artistName, string outputPath)
+        {
+            var llApearTracks = new List<TrackInfo>();
+
+            try
+            {
+                int totalAppears = appearsOnArtist.items.Count;
+                int appearIndex = 1;
+
+                foreach (var appear in appearsOnArtist.items)
+                {
+                    string appearName = PathHelper.SanitizeSimple(appear.name);
+                    lblStatus.Text = $"Procesando aparicion {appearIndex}/{totalAppears}: {appearName} de {artistName}...";
+
+                    if (chkSingleFolder.IsChecked == false)
+                    {
+                        if (!Directory.Exists(Path.Combine(outputPath, artistName, "Appears", appearName)))
+                            Directory.CreateDirectory(Path.Combine(outputPath, artistName, "Appears", appearName));
+                    }
+                    else
+                    {
+                        if (!Directory.Exists(Path.Combine(outputPath, artistName)))
+                            Directory.CreateDirectory(Path.Combine(outputPath, artistName));
+                    }
+
+                    await Task.Delay(50);
+
+                    uint year = 0;
+                    if (!string.IsNullOrEmpty(appear.release_date) && appear.release_date.Length != 4)
+                        year = uint.Parse(appear.release_date.Substring(0, 4));
+
+                    // Obtener canciones del álbum
+                    var appearSongs = await spotify.GetSongAlumb(appear.id);
+
+                    if (appearSongs != null)
+                    {
+                        appearSongs.tracks.items = appearSongs.tracks.items.Where(x => x.artists.Any(y => y.name == artistName)).ToList();
+
+                        int totalTracks = appearSongs.tracks.items.Count;
+                        int trackIndex = 1;
+
+                        foreach (var track in appearSongs.tracks.items)
+                        {
+                            var newTracks = new TrackInfo();
+                            var trackName = PathHelper.SanitizeSimple(track.name);
+
+                            newTracks.name = trackName;
+                            foreach (var artist in track.artists)
+                                newTracks.artists.Add(artist.name);
+
+                            newTracks.albumImage = appear.images[0].url;
+                            newTracks.album = appearName;
+                            newTracks.year = year;
+                            newTracks.isDownloaded = false;
+
+                            if (chkSingleFolder.IsChecked == false)
+                                newTracks.path = Path.Combine(outputPath, artistName, "Appears", appearName, trackName + ".mp3");
+                            else
+                                newTracks.path = Path.Combine(outputPath, artistName, trackName + ".mp3");
+
+                            llApearTracks.Add(newTracks);
+
+                            lblStatus.Text = $"Aparicion {appearIndex}/{totalAppears}: {appearName} → {trackIndex}/{totalTracks} canciones procesadas";
+                            trackIndex++;
+                        }
+                    }
+
+                    appearIndex++;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Error durante la descarga: {ex.Message}", ex);
+                return null;
+            }
+            return llApearTracks;
+        }
 
         private async Task DownloadArtist(bool isImport = false)
         {
@@ -367,11 +602,14 @@ namespace SpotifyPlayListDownloader
                     return;
                 }
 
-                var config = ConfigHelper.LoadConfig();
-                var spotify = new SpotifyService(config.Spotify.ClientId, config.Spotify.ClientSecret);
-
                 lblStatus.Text = "Obteniendo canciones del artista...";
                 Log.Info("Obteniendo canciones de la playlist...");
+
+                if (spotify == null)
+                {
+                    MessageBox.Show("Error al obtener el servicio de Spotify. Por favor, cierra y vuelve a abrir la aplicación.");
+                    return;
+                }
 
                 var albumArtist = await spotify.GetArtistsTracksAsync(artistId, ["album"], "ES", "50", "0");
                 var epsArtist = await spotify.GetArtistsTracksAsync(artistId, ["single"], "ES", "50", "0");
@@ -392,443 +630,30 @@ namespace SpotifyPlayListDownloader
                 if (isImport)
                 {
                     if (albumArtist != null)
-                    {
-                        int totalAlbums = albumArtist.items.Count;
-                        int albumIndex = 1;
-
-                        foreach (var album in albumArtist.items)
-                        {
-                            string albumName = PathHelper.SanitizeSimple(album.name);
-                            lblStatus.Text = $"Procesando álbum {albumIndex}/{totalAlbums}: {albumName} de {artistName}...";
-
-                            if (chkSingleFolder.IsChecked == false)
-                            {
-                                if (!Directory.Exists(Path.Combine(outputPath, artistName, "Albums", albumName)))
-                                    Directory.CreateDirectory(Path.Combine(outputPath, artistName, "Albums", albumName));
-                            }
-                            else
-                            {
-                                if (!Directory.Exists(Path.Combine(outputPath, artistName)))
-                                    Directory.CreateDirectory(Path.Combine(outputPath, artistName));
-                            }
-
-                            await Task.Delay(50);
-
-                            uint year = 0;
-                            if (!string.IsNullOrEmpty(album.release_date) && album.release_date.Length != 4)
-                                year = uint.Parse(album.release_date.Substring(0, 4));
-
-                            // Obtener canciones del álbum
-                            var albumSongs = await spotify.GetSongAlumb(album.id);
-
-                            if (albumSongs != null)
-                            {
-                                int totalTracks = albumSongs.tracks.items.Count;
-                                int trackIndex = 1;
-
-                                foreach (var track in albumSongs.tracks.items)
-                                {
-                                    var newTracks = new TrackInfo();
-                                    var trackName = PathHelper.SanitizeSimple(track.name);
-
-                                    newTracks.name = trackName;
-                                    foreach (var artist in track.artists)
-                                        newTracks.artists.Add(artist.name);
-
-                                    newTracks.albumImage = album.images[0].url;
-                                    newTracks.album = albumName;
-                                    newTracks.year = year;
-                                    newTracks.isDownloaded = false;
-
-                                    if (chkSingleFolder.IsChecked == false)
-                                        newTracks.path = Path.Combine(outputPath, artistName, "Albums", albumName, trackName + ".mp3");
-                                    else
-                                        newTracks.path = Path.Combine(outputPath, artistName, trackName + ".mp3");
-
-                                    llTracks.Add(newTracks);
-
-                                    lblStatus.Text = $"Álbum {albumIndex}/{totalAlbums}: {albumName} → {trackIndex}/{totalTracks} canciones procesadas";
-                                    trackIndex++;
-                                }
-                            }
-
-                            albumIndex++;
-                        }
-                    }
+                        llImportTracks.AddRange(await ProcesArtisAlbum(albumArtist, artistName, outputPath));
 
                     if (epsArtist != null)
-                    {
-                        int totalAlbums = epsArtist.items.Count;
-                        int albumIndex = 1;
-
-                        foreach (var album in epsArtist.items)
-                        {
-                            string albumName = PathHelper.SanitizeSimple(album.name);
-                            lblStatus.Text = $"Procesando álbum {albumIndex}/{totalAlbums}: {albumName} de {artistName}...";
-
-                            if (chkSingleFolder.IsChecked == false)
-                            {
-                                if (!Directory.Exists(Path.Combine(outputPath, artistName, "EPS", albumName)))
-                                    Directory.CreateDirectory(Path.Combine(outputPath, artistName, "EPS", albumName));
-                            }
-                            else
-                            {
-                                if (!Directory.Exists(Path.Combine(outputPath, artistName)))
-                                    Directory.CreateDirectory(Path.Combine(outputPath, artistName));
-                            }
-
-                            await Task.Delay(50);
-
-                            uint year = 0;
-                            if (!string.IsNullOrEmpty(album.release_date) && album.release_date.Length != 4)
-                                year = uint.Parse(album.release_date.Substring(0, 4));
-
-                            // Obtener canciones del álbum
-                            var albumSongs = await spotify.GetSongAlumb(album.id);
-
-                            if (albumSongs != null)
-                            {
-                                int totalTracks = albumSongs.tracks.items.Count;
-                                int trackIndex = 1;
-
-                                foreach (var track in albumSongs.tracks.items)
-                                {
-                                    var newTracks = new TrackInfo();
-                                    var trackName = PathHelper.SanitizeSimple(track.name);
-
-                                    newTracks.name = trackName;
-                                    foreach (var artist in track.artists)
-                                        newTracks.artists.Add(artist.name);
-
-                                    newTracks.albumImage = album.images[0].url;
-                                    newTracks.album = albumName;
-                                    newTracks.year = year;
-                                    newTracks.isDownloaded = false;
-
-                                    if (chkSingleFolder.IsChecked == false)
-                                        newTracks.path = Path.Combine(outputPath, artistName, "EPS", albumName, trackName + ".mp3");
-                                    else
-                                        newTracks.path = Path.Combine(outputPath, artistName, trackName + ".mp3");
-
-                                    llTracks.Add(newTracks);
-
-                                    lblStatus.Text = $"Álbum {albumIndex}/{totalAlbums}: {albumName} → {trackIndex}/{totalTracks} canciones procesadas";
-                                    trackIndex++;
-                                }
-                            }
-
-                            albumIndex++;
-                        }
-                    }
+                        llImportTracks.AddRange(await ProcesEPSArtist(epsArtist, artistName, outputPath));
 
                     if (appearsOnArtist != null)
-                    {
-                        int totalAppears = appearsOnArtist.items.Count;
-                        int appearIndex = 1;
-
-                        foreach (var appear in appearsOnArtist.items)
-                        {
-                            string appearName = PathHelper.SanitizeSimple(appear.name);
-                            lblStatus.Text = $"Procesando aparicion {appearIndex}/{totalAppears}: {appearName} de {artistName}...";
-
-                            if (chkSingleFolder.IsChecked == false)
-                            {
-                                if (!Directory.Exists(Path.Combine(outputPath, artistName, "Appears", appearName)))
-                                    Directory.CreateDirectory(Path.Combine(outputPath, artistName, "Appears", appearName));
-                            }
-                            else
-                            {
-                                if (!Directory.Exists(Path.Combine(outputPath, artistName)))
-                                    Directory.CreateDirectory(Path.Combine(outputPath, artistName));
-                            }
-
-                            await Task.Delay(50);
-
-                            uint year = 0;
-                            if (!string.IsNullOrEmpty(appear.release_date) && appear.release_date.Length != 4)
-                                year = uint.Parse(appear.release_date.Substring(0, 4));
-
-                            // Obtener canciones del álbum
-                            var appearSongs = await spotify.GetSongAlumb(appear.id);
-
-                            if (appearSongs != null)
-                            {
-                                appearSongs.tracks.items = appearSongs.tracks.items.Where(x => x.artists.Any(y => y.name == artistName)).ToList();
-
-                                int totalTracks = appearSongs.tracks.items.Count;
-                                int trackIndex = 1;
-
-                                foreach (var track in appearSongs.tracks.items)
-                                {
-                                    var newTracks = new TrackInfo();
-                                    var trackName = PathHelper.SanitizeSimple(track.name);
-
-                                    newTracks.name = trackName;
-                                    foreach (var artist in track.artists)
-                                        newTracks.artists.Add(artist.name);
-
-                                    newTracks.albumImage = appear.images[0].url;
-                                    newTracks.album = appearName;
-                                    newTracks.year = year;
-                                    newTracks.isDownloaded = false;
-
-                                    if (chkSingleFolder.IsChecked == false)
-                                        newTracks.path = Path.Combine(outputPath, artistName, "Appears", appearName, trackName + ".mp3");
-                                    else
-                                        newTracks.path = Path.Combine(outputPath, artistName, trackName + ".mp3");
-
-                                    llTracks.Add(newTracks);
-
-                                    lblStatus.Text = $"Aparicion {appearIndex}/{totalAppears}: {appearName} → {trackIndex}/{totalTracks} canciones procesadas";
-                                    trackIndex++;
-                                }
-                            }
-
-                            appearIndex++;
-                        }
-                    }
+                        llImportTracks.AddRange(await ProcesApearArtist(appearsOnArtist, artistName, outputPath));
 
                     lblStatus.Text = "Todos los álbumes y canciones han sido procesados correctamente.";
                 }
                 else
                 {
                     if (albumArtist != null)
-                    {
-                        int totalAlbums = albumArtist.items.Count;
-                        int albumIndex = 1;
-
-                        foreach (var album in albumArtist.items)
-                        {
-                            string albumName = PathHelper.SanitizeSimple(album.name);
-                            lblStatus.Text = $"Procesando álbum {albumIndex}/{totalAlbums}: {albumName} de {artistName}...";
-
-                            if (chkSingleFolder.IsChecked == false)
-                            {
-                                if (!Directory.Exists(Path.Combine(outputPath, artistName, "Albums", albumName)))
-                                    Directory.CreateDirectory(Path.Combine(outputPath, artistName, "Albums", albumName));
-                            }
-                            else
-                            {
-                                if (!Directory.Exists(Path.Combine(outputPath, artistName)))
-                                    Directory.CreateDirectory(Path.Combine(outputPath, artistName));
-                            }
-
-                            await Task.Delay(50);
-
-                            uint year = 0;
-                            if (!string.IsNullOrEmpty(album.release_date) && album.release_date.Length != 4)
-                                year = uint.Parse(album.release_date.Substring(0, 4));
-
-                            // Obtener canciones del álbum
-                            var albumSongs = await spotify.GetSongAlumb(album.id);
-
-                            if (albumSongs != null)
-                            {
-                                int totalTracks = albumSongs.tracks.items.Count;
-                                int trackIndex = 1;
-
-                                foreach (var track in albumSongs.tracks.items)
-                                {
-                                    var newTracks = new TrackInfo();
-                                    var trackName = PathHelper.SanitizeSimple(track.name);
-
-                                    newTracks.name = trackName;
-                                    foreach (var artist in track.artists)
-                                        newTracks.artists.Add(artist.name);
-
-                                    newTracks.album = albumName;
-                                    newTracks.year = year;
-                                    newTracks.isDownloaded = false;
-
-                                    if (chkSingleFolder.IsChecked == false)
-                                        newTracks.path = Path.Combine(outputPath, artistName, "Albums", albumName, trackName + ".mp3");
-                                    else
-                                        newTracks.path = Path.Combine(outputPath, artistName, trackName + ".mp3");
-
-                                    llTracks.Add(newTracks);
-
-                                    lblStatus.Text = $"Álbum {albumIndex}/{totalAlbums}: {albumName} → {trackIndex}/{totalTracks} canciones procesadas";
-                                    trackIndex++;
-                                }
-                            }
-
-                            albumIndex++;
-                        }
-                    }
+                        llTracks.AddRange(await ProcesArtisAlbum(albumArtist, artistName, outputPath));
 
                     if (epsArtist != null)
-                    {
-                        int totalAlbums = epsArtist.items.Count;
-                        int albumIndex = 1;
-
-                        foreach (var album in epsArtist.items)
-                        {
-                            string albumName = PathHelper.SanitizeSimple(album.name);
-                            lblStatus.Text = $"Procesando álbum {albumIndex}/{totalAlbums}: {albumName} de {artistName}...";
-
-                            if (chkSingleFolder.IsChecked == false)
-                            {
-                                if (!Directory.Exists(Path.Combine(outputPath, artistName, "EPS", albumName)))
-                                    Directory.CreateDirectory(Path.Combine(outputPath, artistName, "EPS", albumName));
-                            }
-                            else
-                            {
-                                if (!Directory.Exists(Path.Combine(outputPath, artistName)))
-                                    Directory.CreateDirectory(Path.Combine(outputPath, artistName));
-                            }
-
-                            await Task.Delay(50);
-
-                            uint year = 0;
-                            if (!string.IsNullOrEmpty(album.release_date) && album.release_date.Length != 4)
-                                year = uint.Parse(album.release_date.Substring(0, 4));
-
-                            // Obtener canciones del álbum
-                            var albumSongs = await spotify.GetSongAlumb(album.id);
-
-                            if (albumSongs != null)
-                            {
-                                int totalTracks = albumSongs.tracks.items.Count;
-                                int trackIndex = 1;
-
-                                foreach (var track in albumSongs.tracks.items)
-                                {
-                                    var newTracks = new TrackInfo();
-                                    var trackName = PathHelper.SanitizeSimple(track.name);
-
-                                    newTracks.name = trackName;
-                                    foreach (var artist in track.artists)
-                                        newTracks.artists.Add(artist.name);
-
-                                    newTracks.album = albumName;
-                                    newTracks.year = year;
-                                    newTracks.isDownloaded = false;
-
-                                    if (chkSingleFolder.IsChecked == false)
-                                        newTracks.path = Path.Combine(outputPath, artistName, "EPS", albumName, trackName + ".mp3");
-                                    else
-                                        newTracks.path = Path.Combine(outputPath, artistName, trackName + ".mp3");
-
-                                    llTracks.Add(newTracks);
-
-                                    lblStatus.Text = $"Álbum {albumIndex}/{totalAlbums}: {albumName} → {trackIndex}/{totalTracks} canciones procesadas";
-                                    trackIndex++;
-                                }
-                            }
-
-                            albumIndex++;
-                        }
-                    }
+                        llTracks.AddRange(await ProcesEPSArtist(epsArtist, artistName, outputPath));
 
                     if (appearsOnArtist != null)
-                    {
-                        int totalAppears = appearsOnArtist.items.Count;
-                        int appearIndex = 1;
-
-                        foreach (var appear in appearsOnArtist.items)
-                        {
-                            string appearName = PathHelper.SanitizeSimple(appear.name);
-                            lblStatus.Text = $"Procesando aparicion {appearIndex}/{totalAppears}: {appearName} de {artistName}...";
-
-                            if (chkSingleFolder.IsChecked == false)
-                            {
-                                if (!Directory.Exists(Path.Combine(outputPath, artistName, "Appears", appearName)))
-                                    Directory.CreateDirectory(Path.Combine(outputPath, artistName, "Appears", appearName));
-                            }
-                            else
-                            {
-                                if (!Directory.Exists(Path.Combine(outputPath, artistName)))
-                                    Directory.CreateDirectory(Path.Combine(outputPath, artistName));
-                            }
-
-                            await Task.Delay(50);
-
-                            uint year = 0;
-                            if (!string.IsNullOrEmpty(appear.release_date) && appear.release_date.Length != 4)
-                                year = uint.Parse(appear.release_date.Substring(0, 4));
-
-                            // Obtener canciones del álbum
-                            var appearSongs = await spotify.GetSongAlumb(appear.id);
-
-                            if (appearSongs != null)
-                            {
-                                appearSongs.tracks.items = appearSongs.tracks.items.Where(x => x.artists.Any(y => y.name == artistName)).ToList();
-
-                                int totalTracks = appearSongs.tracks.items.Count;
-                                int trackIndex = 1;
-
-                                foreach (var track in appearSongs.tracks.items)
-                                {
-                                    var newTracks = new TrackInfo();
-                                    var trackName = PathHelper.SanitizeSimple(track.name);
-
-                                    newTracks.name = trackName;
-                                    foreach (var artist in track.artists)
-                                        newTracks.artists.Add(artist.name);
-
-                                    newTracks.album = appearName;
-                                    newTracks.year = year;
-                                    newTracks.isDownloaded = false;
-
-                                    if (chkSingleFolder.IsChecked == false)
-                                        newTracks.path = Path.Combine(outputPath, artistName, "Appears", appearName, trackName + ".mp3");
-                                    else
-                                        newTracks.path = Path.Combine(outputPath, artistName, trackName + ".mp3");
-
-                                    llTracks.Add(newTracks);
-
-                                    lblStatus.Text = $"Aparicion {appearIndex}/{totalAppears}: {appearName} → {trackIndex}/{totalTracks} canciones procesadas";
-                                    trackIndex++;
-                                }
-                            }
-
-                            appearIndex++;
-                        }
-                    }
+                        llTracks.AddRange(await ProcesApearArtist(appearsOnArtist, artistName, outputPath));
 
                     lblStatus.Text = "Todos los álbumes y canciones han sido procesados correctamente.";
 
-                    var start = DateTime.Now;
-                    var downloadService = new DownloaderService();
-                    var semaphore = new SemaphoreSlim(5);
-                    int total = llTracks.Count;
-                    int completed = 0;
-
-                    lblStatus.Text = $"Completadas: 0/{total}";
-
-                    var tasks = new List<Task>();
-
-                    foreach (var track in llTracks)
-                    {
-                        await semaphore.WaitAsync();
-                        tasks.Add(Task.Run(() =>
-                        {
-                            try
-                            {
-                                downloadService.DownloadMp3(track);
-                            }
-                            finally
-                            {
-                                int done = Interlocked.Increment(ref completed);
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    lblStatus.Text = $"{done}/{total}";
-                                });
-                                semaphore.Release();
-                            }
-                        }));
-                    }
-
-                    await Task.WhenAll(tasks);
-
-                    lblStatus.Text = $"Completadas: {completed}/{total}";
-
-                    var end = DateTime.Now;
-                    var time = end - start;
-                    lblStatus.Text = $"Tiempo de descarga: {time.Hours}h {time.Minutes}m {time.Seconds}s";
-                    Log.Info($"Descarga completada. Tiempo total: {time}");
-
-                    NotifyHelper.ShowNotification($"Descarga completada. Tiempo de descarga: {time.Hours}h {time.Minutes}m {time.Seconds}s", "Info", 5000, "icon.ico");
+                    Download(llTracks);
                 }
             }
             catch (Exception ex)

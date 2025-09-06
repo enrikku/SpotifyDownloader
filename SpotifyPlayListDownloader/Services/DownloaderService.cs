@@ -217,17 +217,14 @@ namespace SpotifyPlayListDownloader.Services
 
                 if (!string.IsNullOrWhiteSpace(track.albumImage))
                 {
-                    // Descarga la imagen
                     using var resp = await _http.GetAsync(track.albumImage, HttpCompletionOption.ResponseHeadersRead);
                     resp.EnsureSuccessStatusCode();
 
-                    var contentType = resp.Content.Headers.ContentType?.MediaType; // p.ej. "image/jpeg"
+                    var contentType = resp.Content.Headers.ContentType?.MediaType;
                     var bytes = await resp.Content.ReadAsByteArrayAsync();
 
-                    // Si el servidor no envía Content-Type, infiérelo por extensión
                     contentType ??= GuessMimeFromUrl(track.albumImage);
 
-                    // IMPORTANTE: TagLib.Picture.Data es ByteVector
                     var picture = new TagLib.Picture
                     {
                         Type = PictureType.FrontCover,
@@ -236,7 +233,6 @@ namespace SpotifyPlayListDownloader.Services
                         Data = new TagLib.ByteVector(bytes)
                     };
 
-                    // Reemplaza portadas previas; si quieres conservarlas, combina arrays
                     file.Tag.Pictures = new IPicture[] { picture };
                 }
 
@@ -258,7 +254,7 @@ namespace SpotifyPlayListDownloader.Services
                 ".png" => "image/png",
                 ".bmp" => "image/bmp",
                 ".gif" => "image/gif",
-                ".webp" => "image/webp", // ojo: no todos los players la muestran
+                ".webp" => "image/webp",
                 _ => "image/jpeg"
             };
         }
