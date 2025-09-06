@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36212.18
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpotifyPlayListDownloader", "SpotifyPlayListDownloader\SpotifyPlayListDownloader.csproj", "{16F211FD-74EB-4013-B441-72B45FAC029C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpotifyDownloader", "SpotifyPlayListDownloader\SpotifyDownloader.csproj", "{16F211FD-74EB-4013-B441-72B45FAC029C}"
 EndProject
-Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "SpotifyDownloader", "SpotifyDownloader\SpotifyDownloader.vdproj", "{DD78BE34-258A-001A-4348-997AC1AE4167}"
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "SpotifyDownloaderInstaller", "SpotifyDownloaderInstaller\SpotifyDownloaderInstaller.vdproj", "{CFFB3AC2-842D-17E7-7B36-BE2FDF6981BF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,8 +17,8 @@ Global
 		{16F211FD-74EB-4013-B441-72B45FAC029C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{16F211FD-74EB-4013-B441-72B45FAC029C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{16F211FD-74EB-4013-B441-72B45FAC029C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DD78BE34-258A-001A-4348-997AC1AE4167}.Debug|Any CPU.ActiveCfg = Debug
-		{DD78BE34-258A-001A-4348-997AC1AE4167}.Release|Any CPU.ActiveCfg = Release
+		{CFFB3AC2-842D-17E7-7B36-BE2FDF6981BF}.Debug|Any CPU.ActiveCfg = Debug
+		{CFFB3AC2-842D-17E7-7B36-BE2FDF6981BF}.Release|Any CPU.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
