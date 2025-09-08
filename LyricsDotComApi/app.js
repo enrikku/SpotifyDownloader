@@ -1,3 +1,4 @@
+// app.js
 import express from "express";
 import morgan from "morgan";
 import cors from "cors";
@@ -5,7 +6,6 @@ import lyricsRouter from "./routes/lyrics.js";
 import indexRouter from "./routes/index.js";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 app.use(morgan("dev"));
 app.use(cors());
@@ -50,4 +50,4 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => console.log(`Listening on http://localhost:${PORT}`));
+export default app;
