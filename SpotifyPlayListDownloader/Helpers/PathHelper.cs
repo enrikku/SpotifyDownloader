@@ -2,7 +2,7 @@
 {
     public static class PathHelper
     {
-        public static string SanitizeSimple(string name)
+        public static string SanitizeSimple(string name, int maxLength = 100)
         {
             if (string.IsNullOrWhiteSpace(name))
                 return "_";
@@ -11,7 +11,12 @@
             foreach (var ch in invalid)
                 name = name.Replace(ch, '_');
 
-            return name.Trim();
+            name = name.Trim();
+
+            if (name.Length > maxLength)
+                name = name.Substring(0, maxLength);
+
+            return name;
         }
     }
 }
