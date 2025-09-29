@@ -1,4 +1,5 @@
-﻿using TagLib;
+﻿using System.Collections.Concurrent;
+using TagLib;
 using File = System.IO.File;
 
 namespace SpotifyPlayListDownloader.Services
@@ -229,7 +230,6 @@ namespace SpotifyPlayListDownloader.Services
                 if (picture != null)
                     file.Tag.Pictures = new IPicture[] { picture };
 
-
                 file.Save();
                 Log.Info($"Metadatos establecidos para {track.path}");
             }
@@ -261,40 +261,98 @@ namespace SpotifyPlayListDownloader.Services
             var cacheDir = Path.Combine(AppContext.BaseDirectory, "image_cache");
             Directory.CreateDirectory(cacheDir);
 
-            // Usamos hash para evitar nombres raros
             var hash = Convert.ToHexString(
-                System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes(imageUrl))
+                System.Security.Cryptography.MD5.HashData(Encoding.UTF8.GetBytes(imageUrl))
             );
+
             var ext = Path.GetExtension(new Uri(imageUrl).AbsolutePath);
+            if (string.IsNullOrWhiteSpace(ext))
+                ext = ".jpg";
+
             var fileName = Path.Combine(cacheDir, hash + ext);
 
-            byte[] bytes;
-            string contentType;
-
-            if (File.Exists(fileName))
+            var semaphore = _locks.GetOrAdd(hash, _ => new SemaphoreSlim(1, 1));
+            await semaphore.WaitAsync();
+            try
             {
-                bytes = await File.ReadAllBytesAsync(fileName);
-                contentType = GuessMimeFromUrl(fileName);
+                byte[] bytes;
+                string contentType;
+
+                if (File.Exists(fileName))
+                {
+                    bytes = await File.ReadAllBytesAsync(fileName);
+                    contentType = GuessMimeFromUrl(fileName);
+                }
+                else
+                {
+                    using var resp = await _http.GetAsync(imageUrl, HttpCompletionOption.ResponseHeadersRead);
+                    resp.EnsureSuccessStatusCode();
+
+                    bytes = await resp.Content.ReadAsByteArrayAsync();
+                    await File.WriteAllBytesAsync(fileName, bytes);
+
+                    contentType = resp.Content.Headers.ContentType?.MediaType
+                                  ?? GuessMimeFromUrl(fileName);
+                }
+
+                return new TagLib.Picture
+                {
+                    Type = PictureType.FrontCover,
+                    Description = "Cover",
+                    MimeType = contentType,
+                    Data = new TagLib.ByteVector(bytes)
+                };
             }
-            else
+            finally
             {
-                using var resp = await _http.GetAsync(imageUrl, HttpCompletionOption.ResponseHeadersRead);
-                resp.EnsureSuccessStatusCode();
-
-                bytes = await resp.Content.ReadAsByteArrayAsync();
-                await File.WriteAllBytesAsync(fileName, bytes);
-
-                contentType = resp.Content.Headers.ContentType?.MediaType
-                              ?? GuessMimeFromUrl(fileName);
+                semaphore.Release();
             }
-
-            return new TagLib.Picture
-            {
-                Type = PictureType.FrontCover,
-                Description = "Cover",
-                MimeType = contentType,
-                Data = new TagLib.ByteVector(bytes)
-            };
         }
+
+        private static readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new();
+
+        //private async Task<IPicture?> GetCachedPictureAsync(string imageUrl)
+        //{
+        //    if (string.IsNullOrWhiteSpace(imageUrl))
+        //        return null;
+
+        //    var cacheDir = Path.Combine(AppContext.BaseDirectory, "image_cache");
+        //    Directory.CreateDirectory(cacheDir);
+
+        //    // Usamos hash para evitar nombres raros
+        //    var hash = Convert.ToHexString(
+        //        System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes(imageUrl))
+        //    );
+        //    var ext = Path.GetExtension(new Uri(imageUrl).AbsolutePath);
+        //    var fileName = Path.Combine(cacheDir, hash + ext);
+
+        //    byte[] bytes;
+        //    string contentType;
+
+        //    if (File.Exists(fileName))
+        //    {
+        //        bytes = await File.ReadAllBytesAsync(fileName);
+        //        contentType = GuessMimeFromUrl(fileName);
+        //    }
+        //    else
+        //    {
+        //        using var resp = await _http.GetAsync(imageUrl, HttpCompletionOption.ResponseHeadersRead);
+        //        resp.EnsureSuccessStatusCode();
+
+        //        bytes = await resp.Content.ReadAsByteArrayAsync();
+        //        await File.WriteAllBytesAsync(fileName, bytes);
+
+        //        contentType = resp.Content.Headers.ContentType?.MediaType
+        //                      ?? GuessMimeFromUrl(fileName);
+        //    }
+
+        //    return new TagLib.Picture
+        //    {
+        //        Type = PictureType.FrontCover,
+        //        Description = "Cover",
+        //        MimeType = contentType,
+        //        Data = new TagLib.ByteVector(bytes)
+        //    };
+        //}
     }
 }
