@@ -211,30 +211,24 @@ namespace SpotifyPlayListDownloader.Services
             {
                 var file = TagLib.File.Create(track.path);
                 file.Tag.Title = track.name;
-                file.Tag.Performers = new string[] { string.Join(", ", track.artists) };
+                file.Tag.Performers = track.artists.ToArray();
+
+                if (track.artists.Count > 0)
+                {
+                    var artists = track.artists.ToArray();
+                    var otherArtists = track.artists.Skip(1).ToArray();
+
+                    file.Tag.Performers = artists;
+                    file.Tag.AlbumArtists = new string[] { artists[0] };
+                }
+
                 file.Tag.Album = track.album;
                 file.Tag.Year = track.year;
 
-                if (!string.IsNullOrWhiteSpace(track.albumImage))
-                {
-                    using var resp = await _http.GetAsync(track.albumImage, HttpCompletionOption.ResponseHeadersRead);
-                    resp.EnsureSuccessStatusCode();
-
-                    var contentType = resp.Content.Headers.ContentType?.MediaType;
-                    var bytes = await resp.Content.ReadAsByteArrayAsync();
-
-                    contentType ??= GuessMimeFromUrl(track.albumImage);
-
-                    var picture = new TagLib.Picture
-                    {
-                        Type = PictureType.FrontCover,
-                        Description = "Cover",
-                        MimeType = contentType,
-                        Data = new TagLib.ByteVector(bytes)
-                    };
-
+                var picture = await GetCachedPictureAsync(track.albumImage);
+                if (picture != null)
                     file.Tag.Pictures = new IPicture[] { picture };
-                }
+
 
                 file.Save();
                 Log.Info($"Metadatos establecidos para {track.path}");
@@ -256,6 +250,50 @@ namespace SpotifyPlayListDownloader.Services
                 ".gif" => "image/gif",
                 ".webp" => "image/webp",
                 _ => "image/jpeg"
+            };
+        }
+
+        private async Task<IPicture?> GetCachedPictureAsync(string imageUrl)
+        {
+            if (string.IsNullOrWhiteSpace(imageUrl))
+                return null;
+
+            var cacheDir = Path.Combine(AppContext.BaseDirectory, "image_cache");
+            Directory.CreateDirectory(cacheDir);
+
+            // Usamos hash para evitar nombres raros
+            var hash = Convert.ToHexString(
+                System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes(imageUrl))
+            );
+            var ext = Path.GetExtension(new Uri(imageUrl).AbsolutePath);
+            var fileName = Path.Combine(cacheDir, hash + ext);
+
+            byte[] bytes;
+            string contentType;
+
+            if (File.Exists(fileName))
+            {
+                bytes = await File.ReadAllBytesAsync(fileName);
+                contentType = GuessMimeFromUrl(fileName);
+            }
+            else
+            {
+                using var resp = await _http.GetAsync(imageUrl, HttpCompletionOption.ResponseHeadersRead);
+                resp.EnsureSuccessStatusCode();
+
+                bytes = await resp.Content.ReadAsByteArrayAsync();
+                await File.WriteAllBytesAsync(fileName, bytes);
+
+                contentType = resp.Content.Headers.ContentType?.MediaType
+                              ?? GuessMimeFromUrl(fileName);
+            }
+
+            return new TagLib.Picture
+            {
+                Type = PictureType.FrontCover,
+                Description = "Cover",
+                MimeType = contentType,
+                Data = new TagLib.ByteVector(bytes)
             };
         }
     }
