@@ -1,4 +1,4 @@
-﻿namespace SpotifyPlayListDownloader.Clases
+﻿namespace SpotifyDownloader.Clases
 {
     public class TrackInfo
     {
@@ -9,5 +9,6 @@
         public bool isDownloaded = false;
         public string path = "";
         public string albumImage = "";
+        public Artist.Root? artist = null;
     }
 }

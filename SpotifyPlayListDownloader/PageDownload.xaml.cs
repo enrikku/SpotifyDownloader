@@ -2,7 +2,7 @@
 using MessageBox = System.Windows.MessageBox;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 
-namespace SpotifyPlayListDownloader
+namespace SpotifyDownloader
 {
     public partial class PageDownload : Window
     {
@@ -44,11 +44,15 @@ namespace SpotifyPlayListDownloader
         private void BrowseButton_Click(object sender, RoutedEventArgs e)
         {
             Browse();
+            btnDownload.IsEnabled = false;
+            ImportButton.IsEnabled = false;
         }
 
         private async void DownloadButton_Click(object sender, RoutedEventArgs e)
         {
             Download();
+            btnDownload.IsEnabled = false;
+            ImportButton.IsEnabled = false;
         }
 
         private void ShowHelp_Click(object sender, RoutedEventArgs e)
@@ -213,6 +217,9 @@ namespace SpotifyPlayListDownloader
 
                 await Task.WhenAll(tasks);
 
+                btnDownload.IsEnabled = true;
+                ImportButton.IsEnabled = true;
+
                 lblStatus.Text = $"Completadas: {completed}/{total}";
 
                 var end = DateTime.Now;
@@ -346,7 +353,7 @@ namespace SpotifyPlayListDownloader
 
         #region "Descargar Artista"
 
-        private async Task<List<TrackInfo>> ProcesArtisAlbum(ArtistSongs.Root albumArtist, string artistName, string outputPath)
+        private async Task<List<TrackInfo>> ProcesArtisAlbum(ArtistSongs.Root albumArtist, string artistName, string outputPath, Artist.Root? poArtist)
         {
             var llTracksAlbums = new List<TrackInfo>();
             try
@@ -388,6 +395,7 @@ namespace SpotifyPlayListDownloader
                             foreach (var track in albumSongs.tracks.items)
                             {
                                 var newTracks = new TrackInfo();
+                                newTracks.artist = poArtist;
                                 var trackName = PathHelper.SanitizeSimple(track.name);
 
                                 newTracks.name = trackName;
@@ -424,7 +432,7 @@ namespace SpotifyPlayListDownloader
             return llTracksAlbums;
         }
 
-        private async Task<List<TrackInfo>> ProcesEPSArtist(ArtistSongs.Root epsArtist, string artistName, string outputPath)
+        private async Task<List<TrackInfo>> ProcesEPSArtist(ArtistSongs.Root epsArtist, string artistName, string outputPath, Artist.Root? poArtist)
         {
             var llEPSTracks = new List<TrackInfo>();
 
@@ -467,6 +475,7 @@ namespace SpotifyPlayListDownloader
                             foreach (var track in albumSongs.tracks.items)
                             {
                                 var newTracks = new TrackInfo();
+                                newTracks.artist = poArtist;
                                 var trackName = PathHelper.SanitizeSimple(track.name);
 
                                 newTracks.name = trackName;
@@ -502,7 +511,7 @@ namespace SpotifyPlayListDownloader
             return llEPSTracks;
         }
 
-        private async Task<List<TrackInfo>> ProcesApearArtist(ArtistSongs.Root appearsOnArtist, string artistName, string outputPath)
+        private async Task<List<TrackInfo>> ProcesApearArtist(ArtistSongs.Root appearsOnArtist, string artistName, string outputPath, Artist.Root? poArtist)
         {
             var llApearTracks = new List<TrackInfo>();
 
@@ -546,6 +555,7 @@ namespace SpotifyPlayListDownloader
                         foreach (var track in appearSongs.tracks.items)
                         {
                             var newTracks = new TrackInfo();
+                            newTracks.artist = poArtist;
                             var trackName = PathHelper.SanitizeSimple(track.name);
 
                             newTracks.name = trackName;
@@ -625,31 +635,35 @@ namespace SpotifyPlayListDownloader
                             artistName = epsArtist.items[0].artists[0].name;
 
                 artistName = PathHelper.SanitizeSimple(artistName);
+
+                // Obtener información del artista
+                var artistInfo = await spotify.GetArtists(artistId);
+
                 lblStatus.Text = $"Obteniendo canciones de {artistName}...";
 
                 if (isImport)
                 {
                     if (albumArtist != null)
-                        llImportTracks.AddRange(await ProcesArtisAlbum(albumArtist, artistName, outputPath));
+                        llImportTracks.AddRange(await ProcesArtisAlbum(albumArtist, artistName, outputPath, artistInfo));
 
                     if (epsArtist != null)
-                        llImportTracks.AddRange(await ProcesEPSArtist(epsArtist, artistName, outputPath));
+                        llImportTracks.AddRange(await ProcesEPSArtist(epsArtist, artistName, outputPath, artistInfo));
 
                     if (appearsOnArtist != null)
-                        llImportTracks.AddRange(await ProcesApearArtist(appearsOnArtist, artistName, outputPath));
+                        llImportTracks.AddRange(await ProcesApearArtist(appearsOnArtist, artistName, outputPath, artistInfo));
 
                     lblStatus.Text = "Todos los álbumes y canciones han sido procesados correctamente.";
                 }
                 else
                 {
                     if (albumArtist != null)
-                        llTracks.AddRange(await ProcesArtisAlbum(albumArtist, artistName, outputPath));
+                        llTracks.AddRange(await ProcesArtisAlbum(albumArtist, artistName, outputPath, artistInfo));
 
                     if (epsArtist != null)
-                        llTracks.AddRange(await ProcesEPSArtist(epsArtist, artistName, outputPath));
+                        llTracks.AddRange(await ProcesEPSArtist(epsArtist, artistName, outputPath, artistInfo));
 
                     if (appearsOnArtist != null)
-                        llTracks.AddRange(await ProcesApearArtist(appearsOnArtist, artistName, outputPath));
+                        llTracks.AddRange(await ProcesApearArtist(appearsOnArtist, artistName, outputPath, artistInfo));
 
                     lblStatus.Text = "Todos los álbumes y canciones han sido procesados correctamente.";
 

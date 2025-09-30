@@ -1,4 +1,4 @@
-﻿namespace SpotifyPlayListDownloader.Clases
+﻿namespace SpotifyDownloader.Clases
 {
     public static class ConfigHelper
     {

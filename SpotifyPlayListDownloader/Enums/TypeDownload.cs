@@ -1,4 +1,4 @@
-﻿namespace SpotifyPlayListDownloader.Enums
+﻿namespace SpotifyDownloader.Enums
 {
     public enum TYPE_DOWNLOAD
     {

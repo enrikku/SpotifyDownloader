@@ -1,4 +1,4 @@
-﻿namespace SpotifyPlayListDownloader
+﻿namespace SpotifyDownloader
 {
     public partial class PlaylistConfirmDialog : Window
     {

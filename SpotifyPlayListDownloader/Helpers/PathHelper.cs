@@ -1,4 +1,4 @@
-﻿namespace SpotifyPlayListDownloader.Helpers
+﻿namespace SpotifyDownloader.Helpers
 {
     public static class PathHelper
     {

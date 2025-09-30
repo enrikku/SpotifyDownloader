@@ -1,4 +1,4 @@
-﻿namespace SpotifyPlayListDownloader.Services
+﻿namespace SpotifyDownloader.Services
 {
     public class SpotifyService
     {
@@ -240,6 +240,30 @@
             catch (Exception ex)
             {
                 Log.Error($"Error al recuperar canciones para el artista con ID={idAlbum}", ex);
+                return null;
+            }
+        }
+
+        public async Task<Artist.Root?> GetArtists(string id)
+        {
+            try
+            {
+                var url = $"https://api.spotify.com/v1/artists/{id}";
+                using var client = new HttpClient();
+
+                Log.Debug($"Obteniendo información del artista: {url}");
+
+                var response = await GetWithAutoRefreshAsync(client, url).ConfigureAwait(false);
+                response.EnsureSuccessStatusCode();
+
+                var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var artist = JsonConvert.DeserializeObject<Artist.Root>(json);
+
+                return artist;
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Error al recuperar  el artista con ID={id}", ex);
                 return null;
             }
         }

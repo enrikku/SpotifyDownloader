@@ -2,7 +2,7 @@
 using TagLib;
 using File = System.IO.File;
 
-namespace SpotifyPlayListDownloader.Services
+namespace SpotifyDownloader.Services
 {
     public class DownloaderService
     {
@@ -10,6 +10,8 @@ namespace SpotifyPlayListDownloader.Services
 
         private readonly string ytDlpPath;
         private readonly string ffmpegPath;
+
+        private static readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new();
 
         private static readonly HttpClient _http = new HttpClient
         {
@@ -74,14 +76,14 @@ namespace SpotifyPlayListDownloader.Services
                 string args =
                     string.Join(" ", new[]
                     {
-                "-x",
-                "--audio-format", "mp3",
-                "--no-playlist",
-                "--ignore-errors",
-                "--restrict-filenames",
-                "--ffmpeg-location", Q(ffmpegPath),
-                "-o", Q(output),
-                Q(search)
+                        "-x",
+                        "--audio-format", "mp3",
+                        "--no-playlist",
+                        "--ignore-errors",
+                        "--restrict-filenames",
+                        "--ffmpeg-location", Q(ffmpegPath),
+                        "-o", Q(output),
+                        Q(search)
                     });
 
                 // Verificación básica de binarios
@@ -230,6 +232,14 @@ namespace SpotifyPlayListDownloader.Services
                 if (picture != null)
                     file.Tag.Pictures = new IPicture[] { picture };
 
+                if (track.artist != null)
+                {
+                    if (track.artist.genres.Count > 0)
+                    {
+                        file.Tag.Genres = track.artist.genres.ToArray();
+                    }
+                }
+
                 file.Save();
                 Log.Info($"Metadatos establecidos para {track.path}");
             }
@@ -308,51 +318,5 @@ namespace SpotifyPlayListDownloader.Services
                 semaphore.Release();
             }
         }
-
-        private static readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new();
-
-        //private async Task<IPicture?> GetCachedPictureAsync(string imageUrl)
-        //{
-        //    if (string.IsNullOrWhiteSpace(imageUrl))
-        //        return null;
-
-        //    var cacheDir = Path.Combine(AppContext.BaseDirectory, "image_cache");
-        //    Directory.CreateDirectory(cacheDir);
-
-        //    // Usamos hash para evitar nombres raros
-        //    var hash = Convert.ToHexString(
-        //        System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes(imageUrl))
-        //    );
-        //    var ext = Path.GetExtension(new Uri(imageUrl).AbsolutePath);
-        //    var fileName = Path.Combine(cacheDir, hash + ext);
-
-        //    byte[] bytes;
-        //    string contentType;
-
-        //    if (File.Exists(fileName))
-        //    {
-        //        bytes = await File.ReadAllBytesAsync(fileName);
-        //        contentType = GuessMimeFromUrl(fileName);
-        //    }
-        //    else
-        //    {
-        //        using var resp = await _http.GetAsync(imageUrl, HttpCompletionOption.ResponseHeadersRead);
-        //        resp.EnsureSuccessStatusCode();
-
-        //        bytes = await resp.Content.ReadAsByteArrayAsync();
-        //        await File.WriteAllBytesAsync(fileName, bytes);
-
-        //        contentType = resp.Content.Headers.ContentType?.MediaType
-        //                      ?? GuessMimeFromUrl(fileName);
-        //    }
-
-        //    return new TagLib.Picture
-        //    {
-        //        Type = PictureType.FrontCover,
-        //        Description = "Cover",
-        //        MimeType = contentType,
-        //        Data = new TagLib.ByteVector(bytes)
-        //    };
-        //}
     }
 }
