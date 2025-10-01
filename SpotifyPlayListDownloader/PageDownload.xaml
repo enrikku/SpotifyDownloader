@@ -168,6 +168,7 @@
                     <Button
                         Width="200"
                         Height="40"
+                        x:Name="btnDownload"
                         Click="DownloadButton_Click"
                         Style="{StaticResource PrimaryButton}">
                         <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
