@@ -44,8 +44,6 @@ namespace SpotifyDownloader
         private void BrowseButton_Click(object sender, RoutedEventArgs e)
         {
             Browse();
-            btnDownload.IsEnabled = false;
-            ImportButton.IsEnabled = false;
         }
 
         private async void DownloadButton_Click(object sender, RoutedEventArgs e)

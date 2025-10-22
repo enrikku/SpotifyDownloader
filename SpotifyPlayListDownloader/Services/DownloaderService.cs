@@ -268,7 +268,11 @@ namespace SpotifyDownloader.Services
             if (string.IsNullOrWhiteSpace(imageUrl))
                 return null;
 
-            var cacheDir = Path.Combine(AppContext.BaseDirectory, "image_cache");
+            // var cacheDir = Path.Combine(AppContext.BaseDirectory, "image_cache");
+            var appFolderName = "SpotifyDownloader";
+            var cacheDir = Path.Combine(
+                System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData),
+                appFolderName, "image_cache");
             Directory.CreateDirectory(cacheDir);
 
             var hash = Convert.ToHexString(
