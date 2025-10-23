@@ -226,6 +226,9 @@ namespace SpotifyDownloader
                 Log.Info($"Descarga completada. Tiempo total: {time}");
 
                 NotifyHelper.ShowNotification($"Descarga completada. Tiempo de descarga: {time.Hours}h {time.Minutes}m {time.Seconds}s", "Info", 5000, "icon.ico");
+
+                llTracks.Clear();
+                llImportTracks.Clear();
             }
             catch (Exception ex)
             {

@@ -73,6 +73,19 @@ namespace SpotifyDownloader.Services
 
                 // yt-dlp args
                 string search = $"ytsearch1:{query}";
+                //string args =
+                //    string.Join(" ", new[]
+                //    {
+                //        "-x",
+                //        "--audio-format", "mp3",
+                //        "--no-playlist",
+                //        "--ignore-errors",
+                //        "--restrict-filenames",
+                //        "--ffmpeg-location", Q(ffmpegPath),
+                //        "-o", Q(output),
+                //        Q(search)
+                //    });
+
                 string args =
                     string.Join(" ", new[]
                     {
@@ -82,6 +95,7 @@ namespace SpotifyDownloader.Services
                         "--ignore-errors",
                         "--restrict-filenames",
                         "--ffmpeg-location", Q(ffmpegPath),
+                        "--extractor-args", Q("youtube:player_client=default,web_safari;player_js_version=actual"),
                         "-o", Q(output),
                         Q(search)
                     });
