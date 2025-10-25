@@ -33,7 +33,5 @@
             public string type { get; set; }
             public string uri { get; set; }
         }
-
-
     }
 }
