@@ -69,6 +69,34 @@ namespace SpotifyDownloader
             }
         }
 
+        private void btnDeleteCache_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var path = Path.Combine(
+                                System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData),
+                                "SpotifyDownloader", "image_cache");
+
+                if (Directory.Exists(path))
+                {
+                    foreach (var file in Directory.GetFiles(path))
+                        File.Delete(file);
+
+                    foreach (var dir in Directory.GetDirectories(path))
+                        Directory.Delete(dir, true);
+
+                    MessageBox.Show("Contenido de la carpeta eliminado correctamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                    MessageBox.Show("La carpeta no existe.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Error al abrir la ventana de descarga de playlist", ex);
+                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         #endregion Botones
 
         #endregion Eventos

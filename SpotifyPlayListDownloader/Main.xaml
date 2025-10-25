@@ -105,12 +105,27 @@
                                 Style="{StaticResource PrimaryButton}"
                                 ToolTip="Abrir carpeta de logs">
                                 <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
-                                    <TextBlock
+                                    <Image
+                                        Width="25"
+                                        Height="auto"
                                         Margin="0,0,8,0"
-                                        FontFamily="Segoe MDL2 Assets"
-                                        FontSize="16"
-                                        Text="" />
+                                        Source="/Images/log.png" />
                                     <TextBlock Text="Abrir Logs" />
+                                </StackPanel>
+                            </Button>
+                            <Button
+                                x:Name="btnDeleteCache"
+                                Margin="6"
+                                Click="btnDeleteCache_Click"
+                                Style="{StaticResource PrimaryButton}"
+                                ToolTip="Eliminar cache">
+                                <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                    <Image
+                                        Width="25"
+                                        Height="auto"
+                                        Margin="0,0,8,0"
+                                        Source="/Images/trash.png" />
+                                    <TextBlock Text="Eliminar Cache" />
                                 </StackPanel>
                             </Button>
                         </UniformGrid>

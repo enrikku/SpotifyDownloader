@@ -14,7 +14,9 @@
     <None Remove="appsettings.json" />
     <None Remove="exe\ffmpeg.exe" />
     <None Remove="exe\yt-dlp.exe" />
+    <None Remove="Images\log.png" />
     <None Remove="Images\no_image.png" />
+    <None Remove="Images\trash.png" />
     <None Remove="log4net.config" />
   </ItemGroup>
 
@@ -48,7 +50,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Images\log.png" />
     <Resource Include="Images\no_image.png" />
+    <Resource Include="Images\trash.png" />
   </ItemGroup>
 
 </Project>
